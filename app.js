@@ -254,11 +254,11 @@ const App = {
       settingsBtn.addEventListener('click', () => {
         this.sound.pop();
         if (apiKeyInput) {
-          apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+          apiKeyInput.value = this.readStorage('gemini_api_key') || '';
         }
         const modelSelect = document.getElementById('modelSelectInput');
         if (modelSelect) {
-          modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+          modelSelect.value = this.readStorage('gemini_selected_model') || StudioLib.DEFAULT_MODEL;
         }
         settingsModal.classList.remove('hidden');
       });
@@ -274,10 +274,15 @@ const App = {
     if (saveApiKeyBtn && apiKeyInput) {
       saveApiKeyBtn.addEventListener('click', () => {
         const val = apiKeyInput.value.trim();
-        localStorage.setItem('gemini_api_key', val);
         const modelSelect = document.getElementById('modelSelectInput');
-        if (modelSelect) {
-          localStorage.setItem('gemini_selected_model', modelSelect.value);
+        try {
+          localStorage.setItem('gemini_api_key', val);
+          if (modelSelect) {
+            localStorage.setItem('gemini_selected_model', modelSelect.value);
+          }
+        } catch (e) {
+          alert('Il browser non permette di salvare le impostazioni (navigazione privata o memoria bloccata).');
+          return;
         }
         this.sound.success();
         alert('Impostazioni salvate con successo! Ora puoi analizzare le pagine del libro!');
@@ -522,64 +527,7 @@ const App = {
   },
 
   formatSummary(text) {
-    if (!text || typeof text !== 'string') return '';
-    const blocks = text.split(/\n\n+/);
-    return blocks.map(block => {
-      let trimmed = block.trim();
-      if (!trimmed) return '';
-
-      const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
-      const isList = lines.some(l => /^[-*•]\s+/.test(l));
-
-      if (isList) {
-        const headerLines = [];
-        const listLines = [];
-        lines.forEach(l => {
-          if (/^[-*•]\s+/.test(l)) {
-            listLines.push(l);
-          } else {
-            headerLines.push(l);
-          }
-        });
-
-        let headerHtml = '';
-        if (headerLines.length > 0) {
-          const hText = headerLines.join(' ').replace(/^###\s*/, '').replace(/^##\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-extrabold">$1</strong>');
-          headerHtml = `<div class="flex items-center gap-2 mt-5 mb-2.5 pt-2 text-indigo-950 font-heading font-extrabold text-xl md:text-2xl border-b-2 border-indigo-100 pb-1.5">${hText}</div>`;
-        }
-
-        const listItemsHtml = listLines.map(line => {
-          let itemText = line.replace(/^[-*•]\s+/, '').trim();
-          if (!itemText) return '';
-          itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1.5 py-0.5 rounded">$1</strong>');
-          return `
-            <li class="flex items-start gap-3 text-slate-700 text-lg md:text-xl font-medium leading-relaxed my-2">
-              <span class="text-blue-600 font-extrabold text-2xl leading-none select-none mt-0.5">•</span>
-              <span class="flex-1">${itemText}</span>
-            </li>
-          `;
-        }).join('');
-
-        return `${headerHtml}<ul class="bg-blue-50/60 border-2 border-blue-100 rounded-2xl p-4 sm:p-5 my-3 space-y-1 list-none shadow-sm">${listItemsHtml}</ul>`;
-      }
-
-      // Check if first line is a section header (e.g. starts with ### or emoji icons like 📌, 🔍, 💡, 👉, ⭐)
-      if (/^(###|##|📌|🔍|💡|👉|⭐)/.test(lines[0])) {
-        const headerLine = lines[0].replace(/^###\s*/, '').replace(/^##\s*/, '');
-        const formattedHeader = headerLine.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-extrabold">$1</strong>');
-        const headerHtml = `<div class="flex items-center gap-2 mt-5 mb-2.5 pt-2 text-indigo-950 font-heading font-extrabold text-xl md:text-2xl border-b-2 border-indigo-100 pb-1.5">${formattedHeader}</div>`;
-
-        if (lines.length > 1) {
-          const bodyText = lines.slice(1).join(' ').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold">$1</strong>');
-          return `${headerHtml}<p class="leading-relaxed text-slate-800 text-lg md:text-xl font-medium mb-5">${bodyText}</p>`;
-        }
-        return headerHtml;
-      }
-
-      // Normal continuous flowing narrative paragraph with bold keywords and child-friendly typography
-      const formatted = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1.5 py-0.5 rounded">$1</strong>');
-      return `<p class="leading-relaxed text-slate-800 text-lg md:text-xl font-medium mb-5">${formatted}</p>`;
-    }).join('');
+    return StudioLib.formatSummary(text);
   },
 
   loadLesson(lesson) {
@@ -633,6 +581,7 @@ const App = {
     if (!this.currentLesson || !this.currentLesson.parole_chiave) return;
     const cards = this.currentLesson.parole_chiave;
     const card = cards[this.currentCardIndex] || cards[0];
+    const esc = StudioLib.escapeHtml;
 
     const cardContainer = document.getElementById('flashcardContainer');
     if (!cardContainer) return;
@@ -641,17 +590,17 @@ const App = {
       <div class="flip-card-scene w-full max-w-md h-72 mx-auto">
         <div class="flip-card-inner card-clay" id="activeFlipCard" onclick="App.toggleCardFlip()">
           <div class="flip-card-front bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
-            <span class="text-6xl mb-3">${card.emoji || '⭐'}</span>
-            <h3 class="text-2xl md:text-3xl font-bold text-indigo-900 mb-2 font-heading">${card.termine}</h3>
+            <span class="text-6xl mb-3">${esc(card.emoji || '⭐')}</span>
+            <h3 class="text-2xl md:text-3xl font-bold text-indigo-900 mb-2 font-heading">${esc(card.termine)}</h3>
             <span class="text-sm font-semibold text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full mt-4 flex items-center gap-1">
               👆 Tocca per scoprire il significato
             </span>
           </div>
           <div class="flip-card-back bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-            <span class="text-3xl mb-2 font-heading text-amber-900 font-bold">${card.termine}</span>
-            <p class="text-lg md:text-xl text-slate-800 leading-relaxed font-medium px-4">${card.spiegazione}</p>
+            <span class="text-3xl mb-2 font-heading text-amber-900 font-bold">${esc(card.termine)}</span>
+            <p class="text-lg md:text-xl text-slate-800 leading-relaxed font-medium px-4">${esc(card.spiegazione)}</p>
             <div class="mt-4 flex gap-2">
-              <button onclick="event.stopPropagation(); App.voice.speak('${card.termine}. ${card.spiegazione.replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold flex items-center gap-1 shadow">
+              <button data-speak="${esc(card.termine + '. ' + card.spiegazione)}" onclick="event.stopPropagation(); App.speakFrom(this)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold flex items-center gap-1 shadow">
                 🔊 Ascolta
               </button>
             </div>
@@ -711,6 +660,7 @@ const App = {
       return;
     }
 
+    const esc = StudioLib.escapeHtml;
     const state = this.quizAnswersState[qIndex] || { selected: null, isCorrect: null, attempts: 0 };
 
     quizBox.innerHTML = `
@@ -719,13 +669,13 @@ const App = {
           <span class="bg-blue-100 text-blue-800 text-sm font-extrabold px-3 py-1 rounded-full font-heading">
             Domanda ${qIndex + 1} di ${questions.length}
           </span>
-          <button onclick="App.voice.speak('${q.domanda.replace(/'/g, "\\'")}')" class="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-xl">
+          <button data-speak="${esc(q.domanda)}" onclick="App.speakFrom(this)" class="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-xl">
             🔊 Leggi domanda
           </button>
         </div>
 
         <h3 class="text-xl md:text-2xl font-bold text-slate-800 mb-6 font-heading leading-snug">
-          ${q.domanda}
+          ${esc(q.domanda)}
         </h3>
 
         <div class="space-y-3.5 mb-6">
@@ -750,7 +700,7 @@ const App = {
                 <span class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center font-extrabold text-slate-700 flex-shrink-0">
                   ${indicator}
                 </span>
-                <span class="font-medium">${opt}</span>
+                <span class="font-medium">${esc(opt)}</span>
               </button>
             `;
           }).join('')}
@@ -762,7 +712,7 @@ const App = {
             <span class="text-2xl">💡</span>
             <div>
               <h4 class="font-bold text-amber-900 text-sm">Aiutino di Leo il Robot:</h4>
-              <p class="text-amber-800 text-base mt-0.5">${q.indizio || "Rileggi bene la domanda, puoi farcela!"}</p>
+              <p class="text-amber-800 text-base mt-0.5">${esc(q.indizio || "Rileggi bene la domanda, puoi farcela!")}</p>
             </div>
           </div>
         </div>
@@ -847,7 +797,7 @@ const App = {
         <span class="text-7xl mb-3 block animate-bounce">🏆</span>
         <h2 class="text-3xl md:text-4xl font-extrabold text-amber-900 font-heading mb-2">Quiz Completato con Successo!</h2>
         <p class="text-lg text-slate-700 max-w-md mx-auto mb-6">
-          Hai superato tutte le domande della lezione <br><strong class="text-indigo-900 text-xl font-heading">"${this.currentLesson.titolo}"</strong>!
+          Hai superato tutte le domande della lezione <br><strong class="text-indigo-900 text-xl font-heading">"${StudioLib.escapeHtml(this.currentLesson.titolo)}"</strong>!
         </p>
 
         <div class="bg-white border-2 border-amber-200 rounded-2xl p-5 max-w-sm mx-auto shadow-sm mb-6 flex justify-around">
@@ -903,23 +853,17 @@ const App = {
     const list = document.getElementById('demoLessonsList');
     if (!list) return;
 
-    let saved = [];
-    try {
-      saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
-    } catch (e) {
-      saved = [];
-    }
-
-    const allLessons = [...(window.DEMO_LESSONS || []), ...saved];
+    const allLessons = [...(window.DEMO_LESSONS || []), ...this.getSavedLessons()];
+    const esc = StudioLib.escapeHtml;
 
     list.innerHTML = allLessons.map(l => `
-      <div onclick="App.loadLessonById('${l.id}')" 
+      <div data-id="${esc(l.id)}" onclick="App.loadLessonById(this.dataset.id)" 
            class="card-clay p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between transition-all ${this.currentLesson && this.currentLesson.id === l.id ? 'border-2 border-blue-500 bg-blue-50/40' : 'bg-white'}">
         <div class="flex items-center gap-3">
           <span class="text-3xl">${l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚'}</span>
           <div>
-            <h4 class="font-bold text-slate-800 text-base md:text-lg font-heading leading-tight">${l.titolo}</h4>
-            <span class="text-xs font-bold text-slate-500 uppercase">${l.materia}</span>
+            <h4 class="font-bold text-slate-800 text-base md:text-lg font-heading leading-tight">${esc(l.titolo)}</h4>
+            <span class="text-xs font-bold text-slate-500 uppercase">${esc(l.materia)}</span>
           </div>
         </div>
         <span class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl">
@@ -931,12 +875,7 @@ const App = {
 
   loadLessonById(id) {
     this.sound.pop();
-    let saved = [];
-    try {
-      saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
-    } catch (e) {}
-
-    const allLessons = [...(window.DEMO_LESSONS || []), ...saved];
+    const allLessons = [...(window.DEMO_LESSONS || []), ...this.getSavedLessons()];
     const found = allLessons.find(l => l.id === id);
     if (found) {
       this.loadLesson(found);
@@ -979,7 +918,7 @@ const App = {
         <span class="absolute top-1 left-1 bg-indigo-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow">
           Pagina ${idx + 1}
         </span>
-        <button onclick="App.removeUploadedPage('${img.id}')" 
+        <button data-id="${StudioLib.escapeHtml(img.id)}" onclick="App.removeUploadedPage(this.dataset.id)" 
                 class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-md transition-transform hover:scale-110"
                 title="Rimuovi questa pagina">
           ✕
@@ -997,7 +936,7 @@ const App = {
 
   // --- AI Analysis with Google Gemini Free API ---
   async analyzeLessonWithAi() {
-    const apiKey = localStorage.getItem('gemini_api_key');
+    const apiKey = this.readStorage('gemini_api_key');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const loadingState = document.getElementById('aiLoadingState');
     const loadingText = document.getElementById('aiLoadingText');
@@ -1020,6 +959,8 @@ const App = {
     let interval = null;
     let timerInterval = null;
     const abortController = new AbortController();
+    let timeoutId = null;
+    let usedModel = this.readStorage('gemini_selected_model') || StudioLib.DEFAULT_MODEL;
 
     if (cancelBtn) {
       cancelBtn.onclick = () => {
@@ -1141,158 +1082,41 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      // Candidate models for automatic failover (Gemini 3 active generation)
-      // Flash-Lite is placed as immediate fallback for ultra-low latency document processing
-      const candidateModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
-      let data = null;
-      let lastErrorMessage = '';
-      let usedModel = 'gemini-3.8-flash';
+      const models = StudioLib.orderModels(this.readStorage('gemini_selected_model') || StudioLib.DEFAULT_MODEL);
+      timeoutId = setTimeout(() => abortController.abort(), 100000);
 
-      const timeoutId = setTimeout(() => abortController.abort(), 100000);
-
-      modelLoop:
-      for (const modelToCall of candidateModels) {
-        usedModel = modelToCall;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToCall}:generateContent?key=${apiKey}`;
-
-        const genConfig = {
-          responseMimeType: "application/json",
-          temperature: 0.2
-        };
-        // Use "minimal" thinking to ensure fastest response without lengthy reasoning delays
-        if (modelToCall.includes('3.8') || modelToCall.includes('3.6')) {
-          genConfig.thinkingConfig = { thinkingLevel: "minimal" };
-        }
-
-        // Try up to 2 attempts on 3.8, 1 attempt on others
-        const maxAttempts = modelToCall === 'gemini-3.8-flash' ? 2 : 1;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          // Per-attempt timeout (25s): never allow a hanging model to freeze the entire session
-          const attemptController = new AbortController();
-          let isAttemptTimeout = false;
-          const attemptTimeoutId = setTimeout(() => {
-            isAttemptTimeout = true;
-            attemptController.abort();
-          }, 25000);
-
-          const onGlobalAbort = () => attemptController.abort();
-          abortController.signal.addEventListener('abort', onGlobalAbort);
-
-          try {
-            const response = await fetch(url, {
-              method: 'POST',
-              signal: attemptController.signal,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{
-                  role: "user",
-                  parts: parts
-                }],
-                generationConfig: genConfig
-              })
-            });
-
-            if (response.ok) {
-              data = await response.json();
-              break modelLoop; // Success! Exit outer loop
-            }
-
-            const errData = await response.json().catch(() => ({}));
-            lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
-            console.warn(`[${modelToCall}] Tentativo ${attempt}/${maxAttempts} fallito: ${lastErrorMessage}`);
-
-            const errMsgLower = lastErrorMessage.toLowerCase();
-            const isSpike = response.status === 503 ||
-                            response.status === 429 ||
-                            errMsgLower.includes('high demand') ||
-                            errMsgLower.includes('overloaded') ||
-                            errMsgLower.includes('resource_exhausted') ||
-                            errMsgLower.includes('unavailable');
-
-            const isDeprecatedOrNotFound = response.status === 404 ||
-                                           errMsgLower.includes('not found') ||
-                                           errMsgLower.includes('no longer available') ||
-                                           errMsgLower.includes('deprecated');
-
-            if (isDeprecatedOrNotFound) {
-              // Model is shut down or unavailable for this key, move to next candidate
-              break;
-            }
-
-            if (isSpike) {
-              if (attempt < maxAttempts) {
-                if (loadingText) {
-                  loadingText.innerText = `Server ${modelToCall} occupato, riprovo tra un attimo... (${attempt}/${maxAttempts}) ⏳`;
-                }
-                await new Promise(r => setTimeout(r, 2000));
-                continue;
-              } else {
-                if (loadingText) {
-                  loadingText.innerText = `Server ${modelToCall} saturo, passo a un modello più rapido... ⚡`;
-                }
-                break;
-              }
-            } else {
-              // Check for invalid API key
-              if (response.status === 400 && errMsgLower.includes('api_key_invalid')) {
-                throw new Error("Chiave API Google non valida. Controlla la chiave nelle impostazioni.");
-              }
-              // For other non-fatal errors, try next model candidate
-              break;
-            }
-          } catch (callErr) {
-            if (abortController.signal.aborted) {
-              throw callErr; // User explicitly cancelled
-            }
-            if (isAttemptTimeout) {
-              console.warn(`[${modelToCall}] Timeout tentativo (>25s), passo al modello successivo...`);
-              if (loadingText) {
-                loadingText.innerText = `Modello ${modelToCall} lento a rispondere, provo un modello più veloce... ⚡`;
-              }
-              break; // Skip to next candidate model!
-            }
-            if (callErr.message && callErr.message.includes('non valida')) throw callErr;
-            lastErrorMessage = callErr.message || 'Errore di connessione';
-            console.warn(`[${modelToCall}] Errore di rete:`, callErr);
-            break;
-          } finally {
-            clearTimeout(attemptTimeoutId);
-            abortController.signal.removeEventListener('abort', onGlobalAbort);
-          }
-        }
+      let data;
+      try {
+        ({ data, usedModel } = await StudioLib.callGeminiWithFailover({
+          fetchImpl: (url, init) => fetch(url, init),
+          apiKey,
+          models,
+          parts,
+          signal: abortController.signal,
+          onStatus: (msg) => { if (loadingText) loadingText.innerText = msg; }
+        }));
+      } catch (callErr) {
+        if (callErr.usedModel) usedModel = callErr.usedModel;
+        throw callErr;
       }
 
-      clearTimeout(timeoutId);
-
-      if (!data) {
-        throw new Error(lastErrorMessage || "I server di Google sono momentaneamente saturi. Riprova tra 1 minuto.");
-      }
-
-      const candParts = data.candidates?.[0]?.content?.parts || [];
-      // Pick the non-thought part that contains the final JSON
-      const textPart = candParts.slice().reverse().find(p => p.text && !p.thought) || candParts[0];
-      const rawText = textPart?.text;
+      const rawText = StudioLib.extractTextFromParts(data.candidates?.[0]?.content?.parts);
       if (!rawText) throw new Error("La risposta dell'IA era vuota. Riprova con una foto più nitida.");
 
-      // Parse JSON using the tested resilient extractor
-      const parsedLesson = this.extractJson(rawText);
-      if (!parsedLesson || !parsedLesson.titolo || !parsedLesson.quiz) {
+      const extracted = StudioLib.extractJson(rawText);
+      if (!extracted) {
         throw new Error("L'IA non ha formattato correttamente i dati della lezione. Riprova con un'altra foto.");
       }
-
+      // Validates the schema (title, summary, flashcards, quiz indexes) before showing anything
+      const parsedLesson = StudioLib.normalizeLesson(extracted);
       parsedLesson.id = 'custom-' + Date.now();
-      // Ensure compatibility for both riassunto and storia_semplice
-      parsedLesson.riassunto = parsedLesson.riassunto || parsedLesson.storia_semplice || '';
-      parsedLesson.storia_semplice = parsedLesson.riassunto;
 
-      // Save to localStorage
-      let saved = [];
-      try {
-        saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
-      } catch (e) {}
+      const saved = this.getSavedLessons();
       saved.unshift(parsedLesson);
-      localStorage.setItem('studio_magico_custom_lessons', JSON.stringify(saved));
+      if (!this.setSavedLessons(saved)) {
+        // The lesson is still usable in this session: do not lose the AI answer
+        alert("La lezione è pronta, ma la memoria del browser è piena e non è stata salvata. Elimina qualche lezione vecchia dal browser per salvarne di nuove.");
+      }
 
       if (uploadModal) uploadModal.classList.add('hidden');
 
@@ -1313,7 +1137,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       if (errorBox && errorMsg) {
         errorMsg.innerText = err.message || "Errore sconosciuto";
         if (errorDetails) {
-          errorDetails.innerText = `Modello chiamato: ${typeof usedModel !== 'undefined' ? usedModel : 'gemini-3.8-flash'} | Tempo: ${elapsedSeconds}s | ${new Date().toLocaleTimeString()}`;
+          errorDetails.innerText = `Modello chiamato: ${usedModel} | Tempo: ${elapsedSeconds}s | ${new Date().toLocaleTimeString()}`;
         }
         errorBox.classList.remove('hidden');
       }
@@ -1323,6 +1147,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
       }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       if (interval) clearInterval(interval);
       if (timerInterval) clearInterval(timerInterval);
       if (loadingState) loadingState.classList.add('hidden');
@@ -1331,26 +1156,39 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
   },
 
   extractJson(text) {
-    if (!text || typeof text !== 'string') return null;
-    let clean = text.trim();
-    const jsonMatch = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch && jsonMatch[1]) {
-      clean = jsonMatch[1].trim();
-    }
+    return StudioLib.extractJson(text);
+  },
+
+  // --- Safe storage helpers (localStorage can be blocked or full) ---
+  readStorage(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+
+  getSavedLessons() {
     try {
-      return JSON.parse(clean);
+      const list = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
+      if (!Array.isArray(list)) return [];
+      return list.map(l => {
+        try { return Object.assign(StudioLib.normalizeLesson(l), { id: String(l.id) }); } catch (e) { return null; }
+      }).filter(l => l && l.id && l.id !== 'undefined');
     } catch (e) {
-      const start = clean.indexOf('{');
-      const end = clean.lastIndexOf('}');
-      if (start !== -1 && end !== -1 && end > start) {
-        try {
-          return JSON.parse(clean.substring(start, end + 1));
-        } catch (err) {
-          return null;
-        }
-      }
-      return null;
+      return [];
     }
+  },
+
+  setSavedLessons(list) {
+    try {
+      localStorage.setItem('studio_magico_custom_lessons', JSON.stringify(list));
+      return true;
+    } catch (e) {
+      console.warn('Impossibile salvare le lezioni', e);
+      return false;
+    }
+  },
+
+  // Reads the text from a data-speak attribute (keeps AI text out of inline JS)
+  speakFrom(el) {
+    this.voice.speak(el.dataset.speak || '');
   }
 };
 
