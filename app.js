@@ -74,11 +74,20 @@ class SoundEffects {
 class VoiceNarrator {
   constructor() {
     this.synth = window.speechSynthesis || null;
-    this.voices = [];
-    this.selectedVoice = null;
+    this.nativeVoices = [];
+    this.selectedVoiceId = localStorage.getItem('studio_magico_voice_id') || 'online-hd';
     this.isSpeaking = false;
-    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.98');
+    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.95');
     this.onEndCallback = null;
+    this.audioElement = null;
+    this.keepAliveTimer = null;
+
+    // Purge legacy robotic Cosimo or Desktop SAPI voices from saved settings
+    const savedName = (localStorage.getItem('studio_magico_voice_name') || '').toLowerCase();
+    if (savedName.includes('cosimo') || (savedName.includes('desktop') && !savedName.includes('natural')) || savedName.includes('sapi')) {
+      localStorage.removeItem('studio_magico_voice_name');
+      this.selectedVoiceId = 'online-hd';
+    }
 
     if (this.synth) {
       this.loadVoices();
@@ -89,48 +98,91 @@ class VoiceNarrator {
   }
 
   loadVoices() {
-    if (!this.synth) return [];
-    const rawVoices = this.synth.getVoices();
-    // Normalize language codes (handles it_IT, it-IT)
-    this.voices = rawVoices.filter(v => {
+    let rawVoices = [];
+    if (this.synth) {
+      rawVoices = this.synth.getVoices() || [];
+    }
+
+    // Filter for Italian voices
+    const italianRaw = rawVoices.filter(v => {
       const lang = (v.lang || '').replace('_', '-').toLowerCase();
       return lang.startsWith('it');
     });
 
-    // Score voices by quality (Natural/Neural/Online/Network > Enhanced/Google > local)
+    // Score native voices:
+    // Natural / Online Neural = 1000
+    // Google online / WaveNet = 900
+    // Apple Enhanced / Siri = 800
+    // Network / Android cloud = 700
+    // Legacy offline desktop robot voices (Cosimo, desktop SAPI) = -1000 (rejected)
     const scoreVoice = (v) => {
       const name = (v.name || '').toLowerCase();
-      if (name.includes('natural') || name.includes('online')) return 100;
-      if (name.includes('neural')) return 95;
-      if (name.includes('enhanced') || name.includes('premium')) return 90;
-      if (name.includes('network')) return 85; // Android Google Cloud voice
-      if (name.includes('google')) return 70;
-      if (name.includes('alice') || name.includes('federica') || name.includes('elsa') || name.includes('isabella') || name.includes('cosimo')) return 65;
-      if (name.includes('local')) return 10; // low score for robotic offline engines
-      return 50;
+      if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi')) {
+        return -1000;
+      }
+      if (name.includes('natural') || name.includes('online')) return 1000;
+      if (name.includes('neural')) return 950;
+      if (name.includes('google')) return 900;
+      if (name.includes('enhanced') || name.includes('premium') || name.includes('siri')) return 800;
+      if (name.includes('network')) return 700;
+      if (name.includes('alice') || name.includes('federica') || name.includes('luca') || name.includes('isabella')) return 600;
+      if (v.localService === false) return 500;
+      return 100;
     };
 
-    this.voices.sort((a, b) => scoreVoice(b) - scoreVoice(a));
+    this.nativeVoices = italianRaw.sort((a, b) => scoreVoice(b) - scoreVoice(a));
 
-    const savedVoiceName = localStorage.getItem('studio_magico_voice_name');
-    if (savedVoiceName) {
-      this.selectedVoice = this.voices.find(v => v.name === savedVoiceName) || this.voices[0] || null;
-    } else {
-      this.selectedVoice = this.voices[0] || null;
+    // Master list: Online HD Voice is always available and guaranteed human-sounding
+    const voiceList = [
+      {
+        id: 'online-hd',
+        name: 'Google Voce Online HD ⭐ (Molto Naturale)',
+        isOnline: true,
+        highQuality: true
+      }
+    ];
+
+    this.nativeVoices.forEach((v) => {
+      const score = scoreVoice(v);
+      const isHQ = score >= 600;
+      voiceList.push({
+        id: 'native:' + v.name,
+        name: v.name + (isHQ ? ' ⭐ (Naturale)' : ''),
+        isOnline: false,
+        highQuality: isHQ,
+        rawVoice: v
+      });
+    });
+
+    // Check if currently selected voice exists
+    const found = voiceList.find(v => v.id === this.selectedVoiceId);
+    if (!found) {
+      const topNative = voiceList.find(v => !v.isOnline && v.highQuality);
+      if (topNative) {
+        this.selectedVoiceId = topNative.id;
+      } else {
+        this.selectedVoiceId = 'online-hd';
+      }
     }
 
-    return this.voices;
+    return voiceList;
+  }
+
+  getSelectedVoiceObj() {
+    const list = this.loadVoices();
+    return list.find(v => v.id === this.selectedVoiceId) || list[0];
+  }
+
+  setVoice(voiceId) {
+    this.selectedVoiceId = voiceId;
+    localStorage.setItem('studio_magico_voice_id', voiceId);
   }
 
   speak(text, onStart, onEnd) {
-    if (!this.synth) {
-      alert("Il tuo browser non supporta la sintesi vocale, ma puoi leggere comodamente il testo!");
-      return;
-    }
-
     this.stop();
     if (!text || typeof text !== 'string') return;
 
+    this.isSpeaking = true;
     this.onEndCallback = onEnd;
 
     // Clean text: strip markdown symbols, asterisks, bullet dashes
@@ -139,64 +191,152 @@ class VoiceNarrator {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Split text into natural sentences at punctuation (. ! ? :)
-    // This gives proper human intonation curves and natural breath pauses!
-    const rawSentences = cleanedText.match(/[^.!?:]+[.!?:]+/g);
-    const sentences = (rawSentences && rawSentences.length > 0) ? rawSentences : [cleanedText];
+    if (!cleanedText) {
+      this.isSpeaking = false;
+      if (onEnd) onEnd();
+      return;
+    }
 
-    this.isSpeaking = true;
+    const voiceObj = this.getSelectedVoiceObj();
+
+    if (voiceObj && voiceObj.isOnline) {
+      this.speakWithOnlineHd(cleanedText, onStart, onEnd);
+    } else {
+      this.speakWithNativeSpeech(cleanedText, voiceObj, onStart, onEnd);
+    }
+  }
+
+  speakWithOnlineHd(text, onStart, onEnd) {
     if (onStart) onStart();
 
-    let index = 0;
-    const speakNext = () => {
-      if (!this.isSpeaking || index >= sentences.length) {
+    // Chunk into ~120 character natural word segments for Google Translate TTS
+    const words = text.split(' ');
+    const chunks = [];
+    let current = '';
+    for (const w of words) {
+      if ((current + ' ' + w).trim().length <= 130) {
+        current = (current + ' ' + w).trim();
+      } else {
+        if (current) chunks.push(current);
+        current = w;
+      }
+    }
+    if (current) chunks.push(current);
+
+    let idx = 0;
+    const playNext = () => {
+      if (!this.isSpeaking || idx >= chunks.length) {
         this.isSpeaking = false;
         if (onEnd) onEnd();
         return;
       }
 
-      const sentenceText = sentences[index].trim();
-      index++;
-      if (!sentenceText) {
-        speakNext();
+      const chunk = chunks[idx++];
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=it&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+      this.audioElement = new Audio(url);
+      this.audioElement.playbackRate = this.speechRate || 1.0;
+
+      this.audioElement.onended = () => {
+        // Natural breath pause between phrases (60ms)
+        setTimeout(playNext, 60);
+      };
+
+      this.audioElement.onerror = (e) => {
+        console.warn("Online audio chunk error, continuing to next", e);
+        playNext();
+      };
+
+      this.audioElement.play().catch(e => {
+        console.warn("Audio play blocked, fallback to native speech", e);
+        this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
+      });
+    };
+
+    playNext();
+  }
+
+  speakWithNativeSpeech(text, voiceObj, onStart, onEnd) {
+    if (!this.synth) {
+      if (onEnd) onEnd();
+      return;
+    }
+
+    if (onStart) onStart();
+
+    // Split text into airy paragraphs (not individual sentences!) to ensure melodic prosody
+    const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+    const parts = paragraphs.length > 0 ? paragraphs : [text];
+
+    let pIdx = 0;
+
+    // Chrome keep-alive: prevents speech synthesis 15-second cutoff
+    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+    this.keepAliveTimer = setInterval(() => {
+      if (this.synth && this.synth.speaking) {
+        this.synth.pause();
+        this.synth.resume();
+      } else {
+        clearInterval(this.keepAliveTimer);
+      }
+    }, 10000);
+
+    const speakNextParagraph = () => {
+      if (!this.isSpeaking || pIdx >= parts.length) {
+        this.isSpeaking = false;
+        if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+        if (onEnd) onEnd();
         return;
       }
 
-      const utterance = new SpeechSynthesisUtterance(sentenceText);
+      const para = parts[pIdx++];
+      const utterance = new SpeechSynthesisUtterance(para);
       utterance.lang = 'it-IT';
       utterance.rate = this.speechRate;
-      // Strictly 1.0 pitch: zero synthetic frequency warping or chipmunk artifacts
       utterance.pitch = 1.0;
 
-      if (this.selectedVoice) {
-        utterance.voice = this.selectedVoice;
+      if (voiceObj && voiceObj.rawVoice) {
+        utterance.voice = voiceObj.rawVoice;
+      } else if (this.nativeVoices.length > 0) {
+        utterance.voice = this.nativeVoices[0];
       }
 
       utterance.onend = () => {
-        // Natural human breath pause between sentences (120ms)
-        setTimeout(speakNext, 120);
+        setTimeout(speakNextParagraph, 150);
       };
 
       utterance.onerror = (e) => {
-        console.warn("Speech error on sentence", e);
-        speakNext();
+        console.warn("Native speech error", e);
+        speakNextParagraph();
       };
 
       this.synth.speak(utterance);
     };
 
-    speakNext();
+    speakNextParagraph();
   }
 
   stop() {
     this.isSpeaking = false;
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      } catch (e) {}
+      this.audioElement = null;
+    }
     if (this.synth) {
-      this.synth.cancel();
-      if (this.onEndCallback) {
-        const cb = this.onEndCallback;
-        this.onEndCallback = null;
-        cb();
-      }
+      try {
+        this.synth.cancel();
+      } catch (e) {}
+    }
+    if (this.onEndCallback) {
+      const cb = this.onEndCallback;
+      this.onEndCallback = null;
+      cb();
     }
   }
 }
@@ -324,23 +464,8 @@ const App = {
           modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
         }
 
-        // Populate voice dropdown with quality scoring
-        const voiceSelect = document.getElementById('voiceSelectInput');
-        if (voiceSelect) {
-          const italianVoices = this.voice.loadVoices();
-          if (italianVoices.length === 0) {
-            voiceSelect.innerHTML = '<option value="">Voce italiana predefinita</option>';
-          } else {
-            voiceSelect.innerHTML = italianVoices.map(v => {
-              const isSelected = this.voice.selectedVoice && this.voice.selectedVoice.name === v.name;
-              const nameLower = v.name.toLowerCase();
-              const isNatural = nameLower.includes('natural') || nameLower.includes('online') || nameLower.includes('neural') || nameLower.includes('enhanced') || nameLower.includes('network');
-              return `<option value="${v.name}" ${isSelected ? 'selected' : ''}>
-                ${v.name} ${isNatural ? '⭐ (Alta Qualità)' : ''}
-              </option>`;
-            }).join('');
-          }
-        }
+        // Populate voice dropdowns
+        this.updateVoiceSelectors();
 
         // Voice rate slider setup
         const rateSlider = document.getElementById('voiceRateSlider');
@@ -357,14 +482,31 @@ const App = {
       });
     }
 
+    // Voice selectors synchronization (Quick voice on story card + Settings modal voice)
+    this.updateVoiceSelectors();
+    if (window.speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = () => this.updateVoiceSelectors();
+    }
+
+    const onVoiceChanged = (voiceId) => {
+      this.voice.setVoice(voiceId);
+      this.updateVoiceSelectors();
+    };
+
+    const quickVoiceSelect = document.getElementById('quickVoiceSelect');
+    if (quickVoiceSelect) {
+      quickVoiceSelect.addEventListener('change', (e) => onVoiceChanged(e.target.value));
+    }
+
+    const voiceSelectInput = document.getElementById('voiceSelectInput');
+    if (voiceSelectInput) {
+      voiceSelectInput.addEventListener('change', (e) => onVoiceChanged(e.target.value));
+    }
+
     // Test Voice Button
     const testVoiceBtn = document.getElementById('testVoiceBtn');
     if (testVoiceBtn) {
       testVoiceBtn.addEventListener('click', () => {
-        const voiceSelect = document.getElementById('voiceSelectInput');
-        if (voiceSelect && voiceSelect.value) {
-          this.voice.selectedVoice = this.voice.voices.find(v => v.name === voiceSelect.value) || this.voice.selectedVoice;
-        }
         const rateSlider = document.getElementById('voiceRateSlider');
         if (rateSlider) {
           this.voice.speechRate = parseFloat(rateSlider.value);
@@ -397,12 +539,6 @@ const App = {
           localStorage.setItem('gemini_selected_model', modelSelect.value);
         }
 
-        // Save selected voice and rate
-        const voiceSelect = document.getElementById('voiceSelectInput');
-        if (voiceSelect && voiceSelect.value) {
-          localStorage.setItem('studio_magico_voice_name', voiceSelect.value);
-          this.voice.selectedVoice = this.voice.voices.find(v => v.name === voiceSelect.value) || this.voice.selectedVoice;
-        }
         const rateSlider = document.getElementById('voiceRateSlider');
         if (rateSlider) {
           localStorage.setItem('studio_magico_voice_rate', rateSlider.value);
@@ -566,7 +702,7 @@ const App = {
       listenStoryBtn.addEventListener('click', () => {
         if (this.voice.isSpeaking) {
           this.voice.stop();
-          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta la Spiegazione</span>';
+          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Racconto</span>';
         } else if (this.currentLesson) {
           listenStoryBtn.innerHTML = '<span>⏹️</span><span>Ferma Voce</span>';
           const content = this.currentLesson.riassunto || this.currentLesson.storia_semplice || '';
@@ -575,17 +711,11 @@ const App = {
             .replace(/\s+/g, ' ')
             .trim();
 
-          let speechParts = `${this.currentLesson.titolo}. ${cleanSpeech}`;
-          const cards = this.currentLesson.parole_chiave;
-          if (Array.isArray(cards) && cards.length > 0) {
-            speechParts += '. Ora ascoltiamo i punti chiave: ' + cards.map(c => `${c.termine}: ${c.spiegazione}`).join('. ');
-          }
-
           this.voice.speak(
-            speechParts,
+            `${this.currentLesson.titolo}. ${cleanSpeech}`,
             () => {},
             () => {
-              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta la Spiegazione</span>';
+              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Racconto</span>';
             }
           );
         }
@@ -739,15 +869,12 @@ const App = {
          'bg-purple-100 text-purple-800');
     }
 
-    // Render Structured Summary
+    // Render Structured Summary (Unified continuous narrative)
     const storyEl = document.getElementById('storyContent');
     if (storyEl) {
       const content = lesson.riassunto || lesson.storia_semplice || '';
       storyEl.innerHTML = this.formatSummary(content);
     }
-
-    // Render Key Points with brief explanations
-    this.renderKeyPoints();
 
     // Reset Read button
     const markReadBtn = document.getElementById('markReadBtn');
@@ -758,7 +885,7 @@ const App = {
         markReadBtn.innerHTML = '<span>✅</span><span>Completato! (+20 ⭐)</span>';
         markReadBtn.classList.add('opacity-75', 'cursor-not-allowed');
       } else {
-        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto la spiegazione! (+20 ⭐)</span>';
+        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto il racconto! (+20 ⭐)</span>';
         markReadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
       }
     }
@@ -768,54 +895,21 @@ const App = {
     this.renderQuizQuestion();
   },
 
-  // --- Key Points (Punti Chiave con Breve Spiegazione) ---
-  renderKeyPoints() {
-    const keyPointsGrid = document.getElementById('keyPointsGrid');
-    const keyPointsSection = document.getElementById('keyPointsSection');
-    if (!keyPointsGrid || !keyPointsSection) return;
+  updateVoiceSelectors() {
+    const list = this.voice.loadVoices();
+    const currentId = this.voice.selectedVoiceId;
 
-    const cards = (this.currentLesson && Array.isArray(this.currentLesson.parole_chiave))
-      ? this.currentLesson.parole_chiave
-      : [];
+    const populate = (el) => {
+      if (!el) return;
+      el.innerHTML = list.map(v => `
+        <option value="${v.id}" ${v.id === currentId ? 'selected' : ''}>
+          ${v.name}
+        </option>
+      `).join('');
+    };
 
-    if (cards.length === 0) {
-      keyPointsSection.classList.add('hidden');
-      return;
-    }
-
-    keyPointsSection.classList.remove('hidden');
-    keyPointsGrid.innerHTML = cards.map((item, idx) => `
-      <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 border-2 border-indigo-100 hover:border-indigo-300 transition-all shadow-sm flex items-start gap-3.5 group">
-        <div class="text-3xl sm:text-4xl flex-shrink-0 select-none bg-white p-2 rounded-2xl shadow-xs border border-indigo-100/60">
-          ${item.emoji || '⭐'}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between gap-2">
-            <h5 class="text-base sm:text-lg font-extrabold text-indigo-950 font-heading leading-tight">
-              ${item.termine}
-            </h5>
-            <button type="button" onclick="App.speakSingleKeyPoint(${idx})" class="btn-tactile btn-slate text-xs font-bold px-2 py-1 rounded-xl flex items-center gap-1 text-slate-600 hover:text-indigo-600 shadow-xs" title="Ascolta questo punto chiave">
-              <span>🔊</span>
-            </button>
-          </div>
-          <p class="text-sm sm:text-base font-medium text-slate-700 mt-1.5 leading-snug">
-            ${item.spiegazione}
-          </p>
-        </div>
-      </div>
-    `).join('');
-  },
-
-  speakSingleKeyPoint(index) {
-    if (!this.currentLesson || !this.currentLesson.parole_chiave) return;
-    const item = this.currentLesson.parole_chiave[index];
-    if (!item) return;
-
-    if (this.voice.isSpeaking) {
-      this.voice.stop();
-    }
-    const textToSpeak = `${item.termine}. ${item.spiegazione}`;
-    this.voice.speak(textToSpeak);
+    populate(document.getElementById('quickVoiceSelect'));
+    populate(document.getElementById('voiceSelectInput'));
   },
 
   // --- Flashcard Logic ---
@@ -1235,7 +1329,7 @@ const App = {
 
       const loadingSteps = [
         `Lettura in corso delle ${this.uploadedImages.length > 1 ? this.uploadedImages.length + ' pagine' : 'pagine'} del libro... 📖`,
-        "Analisi di tutti i punti chiave con le spiegazioni semplici... 🔍",
+        "Scrittura del racconto unico che unisce tutti i punti focali... ✏️",
         "Generazione delle flashcard didattiche... 🗂️",
         "Creazione del Super Quiz per la verifica... 🎯 (ancora pochi istanti!)"
       ];
@@ -1250,39 +1344,42 @@ const App = {
       const targetCount = totalPages > 1 ? Math.min(8, Math.max(5, totalPages * 3)) : 5;
 
       const promptText = `
-Sei un maestro di scuola elementare specializzato nel rendere le lezioni CHIARE, SCATTANTI e FACILI DA MEMORIZZARE per bambini di 3ª elementare (8-9 anni).
-Il tuo obiettivo è analizzare attentamente le pagine caricate, individuare TUTTI I PUNTI CHIAVE e fornire per ciascuno di essi una BREVE SPIEGAZIONE semplice e immediata, insieme a una breve introduzione della lezione, flashcard e quiz.
+Sei un maestro di scuola elementare specializzato nel creare racconti didattici chiari, avvincenti e facili da comprendere per bambini di 3ª elementare (8-9 anni).
+Il tuo obiettivo è analizzare TUTTI i contenuti e i punti focali delle pagine caricate e amalgamarli in un UNICO RACCONTO DIDATTICO FLUIDO E ARMONIOSO (campo "riassunto"), unendo in una sola narrazione continua sia la visione d'insieme sia la breve spiegazione di ogni singolo punto chiave!
 
-REGOLE PER IL CONTENUTO:
+REGOLE TASSATIVE PER IL RACCONTO UNICO (campo "riassunto"):
+1. UNICO RACCONTO CONTINUO (NIENTE SCHEDE SEPARATE, NIENTE ELENCHI, NIENTE TITOLI STEP-BY-STEP):
+   - Scrivi un testo unitario e scorrevole suddiviso in 3 o 4 brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
+   - NON usare elenchi puntati o trattini (- o •).
+   - NON usare sezioni rigide o etichette (niente "📌 Introduzione", "🔍 Punti focali", "💡 Conclusione").
+   - Il testo deve scorrere come una piacevole lettura per ragazzi, facile da leggere o da ascoltare.
 
-1. INTRODUZIONE DELLA LEZIONE (campo "riassunto"):
-   - Scrivi una brevissima introduzione continua di 2 paragrafi (80-120 parole totali).
-   - Offre il quadro d'insieme della lezione collegando i concetti principali in modo scorrevole, piacevole e fresco.
-   - Evidenzia i concetti più importanti in **grassetto**.
-   - Usa frasi brevi e dirette (senza formule finte o infantili tipo "Ciao sono Leo" o "C'era una volta").
+2. TUTTI I PUNTI FOCALI AMALGAMATI CON BREVE SPIEGAZIONE:
+   - Identifica TUTTI i punti focali, concetti, personaggi, mestieri, fasi o elementi presenti nelle pagine caricate (senza tralasciarne alcuno!).
+   - Inserisci e spiega ciascun punto focale all'interno del racconto con una BREVE SPIEGAZIONE semplice e limpida (1 frase corta, massimo 15 parole).
+   - Evidenzia sempre ogni termine o punto focale in **grassetto** (es. **il cartografo**, **la selce**, **l'evaporazione**) direttamente nella frase in cui viene spiegato.
 
-2. TUTTI I PUNTI CHIAVE CON BREVE SPIEGAZIONE (campo "parole_chiave"):
-   - Analizza la lezione ed estrai TUTTI i punti chiave, concetti, mestieri, fasi o elementi principali spiegati nelle pagine (tra 4 e 8 punti chiave). Non tralasciare nessun concetto fondamentale!
-   - Per OGNI punto chiave analizzato assegna:
-     * "termine": il nome esatto e chiaro del concetto (es. "Il Cartografo", "La Selce", "L'Evaporazione").
-     * "emoji": un'icona simpatica e pertinente (es. 🗺️, 🪨, ☁️).
-     * "spiegazione": una BREVE SPIEGAZIONE di 1 o 2 frasi semplici (10-25 parole ciascuna), chiarissima per un bambino di 8 anni, che spiega esattamente che cos'è, cosa fa o come funziona.
+3. LUNGHEZZA E LESSICO PER LA 3ª ELEMENTARE:
+   - Lunghezza totale del racconto: tra 130 e 190 parole complessive (ideale per la memoria e l'attenzione di un bambino di 8 anni: completo di tutti i punti focali ma leggero da leggere in 1 minuto e mezzo).
+   - Frasi corte, lessico semplice, tono caldo e incoraggiante.
+   - Niente formule infantili finte ("Ciao sono Leo", "C'era una volta").
 
-3. SUPER QUIZ (campo "quiz"):
-   - ${targetCount} domande a risposta multipla con 3 opzioni (una corretta) e un aiutino amichevole per verificare la comprensione dei punti chiave.
+REQUISITI PER FLASHCARD E SUPER QUIZ:
+- "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, con ciascun punto focale (termine, emoji simpatica e spiegazione in una frase semplice).
+- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un aiutino amichevole per verificare la comprensione.
 
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Analizza e spiega tutti i punti chiave di tutte le ${totalPages} pagine!` : ''}
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Unisci e spiega tutti i punti focali di tutte le ${totalPages} pagine in questo unico racconto!` : ''}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
-  "titolo": "Titolo breve e chiaro della lezione",
+  "titolo": "Titolo chiaro e corretto della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "riassunto": "Primo breve paragrafo che introduce l'argomento e i **termini chiave** (2-3 frasi corte)...\\n\\nSecondo breve paragrafo che completa la panoramica della lezione in modo scorrevole (2-3 frasi corte)...",
+  "riassunto": "Primo paragrafo continuo che introduce l'argomento generale e i primi **punti focali** spiegandoli con frasi corte...\\n\\nSecondo paragrafo continuo che prosegue il racconto spiegando gli altri **punti chiave** e il loro ruolo...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude il racconto in modo armonioso...",
   "parole_chiave": [
     {
-      "termine": "Nome del punto chiave",
+      "termine": "Nome del punto focale",
       "emoji": "Icona adatta",
-      "spiegazione": "Breve spiegazione in 1 o 2 frasi semplici e chiare per un bimbo di 8 anni."
+      "spiegazione": "Breve spiegazione in una frase chiara per un bimbo di 8 anni."
     }
   ],
   "quiz": [

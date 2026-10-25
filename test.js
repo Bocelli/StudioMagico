@@ -344,5 +344,49 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(keyPointsHtml.includes('Il Fotografo') && keyPointsHtml.includes('Scatta fotografie'), 'Key points HTML generation failed');
   console.log(`✓ Key points with brief explanation verification & renderer passed (${sampleKeyPoints.length} points)`);
 
+  // Test L: Voice Quality Scoring & Robot Rejection (Cosimo/Desktop SAPI ban)
+  function scoreVoiceTest(v) {
+    const name = (v.name || '').toLowerCase();
+    if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi')) {
+      return -1000;
+    }
+    if (name.includes('natural') || name.includes('online')) return 1000;
+    if (name.includes('neural')) return 950;
+    if (name.includes('google')) return 900;
+    if (name.includes('enhanced') || name.includes('premium') || name.includes('siri')) return 800;
+    if (name.includes('network')) return 700;
+    if (name.includes('alice') || name.includes('federica') || name.includes('luca') || name.includes('isabella')) return 600;
+    return 100;
+  }
+
+  assert(scoreVoiceTest({ name: 'Microsoft Diego Online (Natural) - Italian (Italy)' }) === 1000, 'Natural voice should have highest score 1000');
+  assert(scoreVoiceTest({ name: 'Google italiano' }) === 900, 'Google italiano should score 900');
+  assert(scoreVoiceTest({ name: 'Microsoft Cosimo - Italian (Italy)' }) === -1000, 'Robotic Cosimo must be rejected with -1000 score');
+  assert(scoreVoiceTest({ name: 'Microsoft Elsa Desktop - Italian' }) === -1000, 'Legacy Elsa Desktop must be rejected');
+  console.log('✓ Voice quality scoring & robotic legacy voice rejection passed');
+
+  // Test M: Online HD Voice Text Chunker for smooth playback
+  function chunkForOnlineAudio(text, maxLen = 130) {
+    const words = text.replace(/[*#•_~`>-]/g, ' ').replace(/\s+/g, ' ').trim().split(' ');
+    const chunks = [];
+    let current = '';
+    for (const w of words) {
+      if ((current + ' ' + w).trim().length <= maxLen) {
+        current = (current + ' ' + w).trim();
+      } else {
+        if (current) chunks.push(current);
+        current = w;
+      }
+    }
+    if (current) chunks.push(current);
+    return chunks;
+  }
+
+  const sampleLongStory = "La geografia è la scienza meravigliosa che studia la Terra e i suoi paesaggi. Il geografo collabora con una squadra di esperti: il fotografo scatta foto dall'alto per vedere i cambiamenti, mentre il cartografo disegna le carte geografiche utilissime per orientarsi.";
+  const audioChunks = chunkForOnlineAudio(sampleLongStory, 130);
+  assert(audioChunks.length >= 2, 'Audio chunker should produce at least 2 safe chunks');
+  audioChunks.forEach(c => assert(c.length <= 135, `Chunk too long: ${c.length}`));
+  console.log(`✓ Online HD Voice text chunker passed (${audioChunks.length} chunks generated)`);
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

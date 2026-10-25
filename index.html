@@ -55,7 +55,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v2.3 (Punti Chiave Spiegati & Lettura Rapida)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v2.4 (Racconto Unico Amalgamato & Voce Naturale HD)</span></span>
         </div>
       </div>
 
@@ -182,54 +182,41 @@
       <div class="card-clay p-6 sm:p-8 bg-white border-blue-200">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
           <div>
-            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Lettura Rapida (1 Minuto)</span>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Racconto Didattico Completo</span>
             <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-              Il Succo della Lezione
+              Il Racconto della Lezione
             </h3>
           </div>
-          <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
-            <span>🔊</span>
-            <span>Ascolta la Spiegazione</span>
-          </button>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Quick Voice Selector -->
+            <div class="flex items-center gap-1.5 bg-slate-100/90 border-2 border-slate-200 px-3 py-1.5 rounded-2xl shadow-xs" title="Scegli la voce che preferisci">
+              <span class="text-sm">🎙️</span>
+              <select id="quickVoiceSelect" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer max-w-[160px] sm:max-w-[210px] truncate">
+                <option value="">Rilevamento voci...</option>
+              </select>
+            </div>
+
+            <!-- Listen Button -->
+            <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
+              <span>🔊</span>
+              <span>Ascolta il Racconto</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Flowing Explanation Content -->
+        <!-- Flowing Explanation Content: Unified continuous narrative amalgamating all key points -->
         <article id="storyContent" class="space-y-4 max-w-none">
           <!-- Populated by JavaScript -->
         </article>
 
-        <!-- SEZIONE PUNTI CHIAVE SPIEGATI -->
-        <div id="keyPointsSection" class="mt-8 pt-6 border-t-2 border-indigo-100/80">
-          <div class="flex items-center justify-between gap-2 mb-4">
-            <div class="flex items-center gap-2.5">
-              <span class="text-2xl">🔍</span>
-              <div>
-                <h4 class="text-lg sm:text-xl font-extrabold text-indigo-950 font-heading">
-                  I Punti Chiave della Lezione
-                </h4>
-                <p class="text-xs sm:text-sm font-medium text-slate-500">
-                  Ogni concetto importante con la sua breve spiegazione
-                </p>
-              </div>
-            </div>
-            <span class="hidden sm:inline-flex bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full">
-              Punti Chiave
-            </span>
-          </div>
-
-          <!-- Cards Grid for Each Analyzed Key Point -->
-          <div id="keyPointsGrid" class="grid sm:grid-cols-2 gap-3 sm:gap-4">
-            <!-- Populated dynamically by JavaScript -->
-          </div>
-        </div>
-
         <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
           <p class="text-sm font-semibold text-slate-500">
-            💡 Suggerimento: Dopo aver letto o ascoltato la spiegazione, passa alle Flashcard per fissare i concetti!
+            💡 Suggerimento: Dopo aver letto o ascoltato il racconto, passa alle Flashcard per fissare i concetti!
           </p>
           <button id="markReadBtn" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow">
             <span>⭐</span>
-            <span>Ho letto la spiegazione! (+20 ⭐)</span>
+            <span>Ho letto il racconto! (+20 ⭐)</span>
           </button>
         </div>
       </div>
@@ -510,7 +497,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=14"></script>
-  <script src="app.js?v=14"></script>
+  <script src="demo-data.js?v=15"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>
