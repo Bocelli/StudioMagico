@@ -1031,13 +1031,13 @@ const App = {
         `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
         "Estraendo le idee più importanti e le parole magiche... ✨",
         "Scrivendo la storia divertente per la 3ª elementare... ✏️",
-        "Creando il Super Quiz con aiutini amichevoli... 🎯"
+        "Creando il Super Quiz con aiutini amichevoli... 🎯 (ancora qualche istante!)"
       ];
       let stepIdx = 0;
       interval = setInterval(() => {
         stepIdx = (stepIdx + 1) % loadingSteps.length;
         if (loadingText) loadingText.innerText = loadingSteps[stepIdx];
-      }, 2500);
+      }, 3000);
 
       const promptText = `
 Sei "Leo", il tutor di studio per bambini di 3ª elementare (8-9 anni).
@@ -1111,8 +1111,8 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       const modelName = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-      // Max 45 seconds timeout so it never hangs
-      const timeoutId = setTimeout(() => abortController.abort(), 45000);
+      // 120 seconds timeout so Gemini has plenty of time for 2+ textbook pages
+      const timeoutId = setTimeout(() => abortController.abort(), 120000);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -1125,7 +1125,10 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
           }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.2
+            temperature: 0.2,
+            thinkingConfig: {
+              thinkingLevel: "low"
+            }
           }
         })
       });
