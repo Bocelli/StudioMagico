@@ -74,7 +74,7 @@ class SoundEffects {
 const App = {
   sound: new SoundEffects(),
   currentLesson: null,
-  activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz' | 'curiosita'
+  activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz'
   uploadedImages: [], // Array of { id, dataUrl, mimeType, base64, name }
   currentCardIndex: 0,
   currentQuizIndex: 0,
@@ -404,7 +404,7 @@ const App = {
     });
 
     // Toggle content views
-    ['storia', 'flashcard', 'quiz', 'curiosita'].forEach(t => {
+    ['storia', 'flashcard', 'quiz'].forEach(t => {
       const el = document.getElementById(`tab-${t}`);
       if (el) {
         if (t === tab) {
@@ -417,7 +417,7 @@ const App = {
 
     // Context reactions
     if (tab === 'storia') {
-      this.setMascotMessage("Ecco la spiegazione continua e scorrevole della lezione! Puoi leggerla o cliccare 'Ascolta' per farla leggere ad alta voce! 📖");
+      this.setMascotMessage("Ecco la spiegazione chiara e scorrevole della lezione! Buona lettura! 📖");
     } else if (tab === 'flashcard') {
       this.setMascotMessage("Tocca le carte per girarle e scoprire i trucchi delle parole chiave! 🗂️");
       this.renderFlashcard();
@@ -659,7 +659,7 @@ const App = {
           <div class="flex items-start gap-3">
             <span class="text-2xl">💡</span>
             <div>
-              <h4 class="font-bold text-amber-900 text-sm">Aiutino di Leo il Robot:</h4>
+              <h4 class="font-bold text-amber-900 text-sm">💡 Aiutino Magico:</h4>
               <p class="text-amber-800 text-base mt-0.5">${q.indizio || "Rileggi bene la domanda, puoi farcela!"}</p>
             </div>
           </div>
@@ -966,7 +966,7 @@ REGOLE TASSATIVE PER IL RACCONTO UNICO (campo "riassunto"):
    - Scrivi un testo unitario e scorrevole suddiviso in 3 o 4 brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
    - NON usare elenchi puntati o trattini (- o •).
    - NON usare sezioni rigide o etichette (niente "📌 Introduzione", "🔍 Punti focali", "💡 Conclusione").
-   - Il testo deve scorrere come una piacevole lettura per ragazzi, facile da leggere o da ascoltare.
+   - Il testo deve scorrere come una piacevole lettura per ragazzi, scorrevole e facile da leggere.
 
 2. TUTTI I PUNTI FOCALI AMALGAMATI CON BREVE SPIEGAZIONE:
    - Identifica TUTTI i punti focali, concetti, personaggi, mestieri, fasi o elementi presenti nelle pagine caricate (senza tralasciarne alcuno!).

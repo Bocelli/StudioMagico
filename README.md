@@ -8,16 +8,16 @@ L'app sfrutta l'**Intelligenza Artificiale gratuita (Google Gemini)** combinata 
 
 ## 🎯 Perché Aiuta Tuo Figlio a Studiare da Solo
 
-1. **Addio muri di testo noiosi**: L'IA trasforma la lezione in una **favola/avventura avvincente** con parole semplici, frasi corte ed esempi della vita quotidiana adatti a un bambino di 8 anni.
+1. **Addio muri di testo noiosi**: L'IA trasforma la lezione in una **spiegazione chiara, strutturata e scorrevole**, con parole semplici, frasi corte e punti focali evidenziati in grassetto per un bambino di 8 anni.
 2. **Supporto Multi-Pagina 📸**: Puoi scattare o caricare più pagine dello stesso argomento (es. pagina 42 e 43). L'IA le analizzerà in sequenza come un'unica lezione coerente!
-3. **Lettura Vocale con Leo il Robot 🔊**: Grazie alla sintesi vocale in italiano integrata nel browser (*Web Speech API*), il bambino può premere un pulsante e ascoltare la spiegazione e le domande lette ad alta voce da Leo con cuffie o altoparlanti, permettendoti di dedicarti ad altro in tranquillità.
-3. **Flashcard Magiche 3D 🗂️**: Carte interattive che si girano con un tocco per scoprire il significato delle parole chiave e i concetti fondamentali con icone e spiegazioni immediate.
-4. **Super Quiz Gamificato 🎯**:
+3. **Lettura Chiara e Indipendente 📖**: Testo calibrato per la memoria di un bambino di 3ª elementare (~1 minuto di lettura), leggero, completo e senza affaticare la vista.
+4. **Flashcard Magiche 3D 🗂️**: Carte interattive che si girano con un tocco per scoprire il significato delle parole chiave e i concetti fondamentali con icone e spiegazioni immediate.
+5. **Super Quiz Gamificato 🎯**:
    - Domande a risposta multipla a caratteri grandi e pulsanti facili da toccare.
-   - **Nessuna frustrazione**: Se sbaglia, non riceve una croce rossa punitiva, ma un *Aiutino Magico* amichevole di Leo che lo guida a ragionare e riprovare!
+   - **Nessuna frustrazione**: Se sbaglia, non riceve una croce rossa punitiva, ma un *Aiutino Magico* che lo guida a ragionare e riprovare!
    - Ricompense con **Stelline ⭐** e festeggiamenti con coriandoli animati (*Confetti*).
-5. **Diploma di Esperto 🏆**: Al termine di ogni quiz superato, viene generato un attestato ufficiale personalizzato con il titolo della lezione, stampabile o salvabile in PDF!
-6. **3 Lezioni Demo Già Pronte**: Storia (*Paleolitico e la scoperta del fuoco*), Scienze (*Il ciclo dell'acqua*) e Geografia (*I segreti della montagna*) pronte per giocare subito senza configurare nulla!
+6. **Diploma di Esperto 🏆**: Al termine di ogni quiz superato, viene generato un attestato ufficiale personalizzato con il titolo della lezione, stampabile o salvabile in PDF!
+7. **3 Lezioni Demo Già Pronte**: Storia (*Paleolitico e la scoperta del fuoco*), Scienze (*Il ciclo dell'acqua*) e Geografia (*I segreti della montagna*) pronte per giocare subito senza configurare nulla!
 
 ---
 
@@ -47,7 +47,7 @@ Se vuoi far studiare tuo figlio sul suo tablet o smartphone via Wi-Fi:
 
 ## 🔑 Come Ottenere la Chiave IA Gratuita di Google Gemini (in 1 Minuto)
 
-L'app utilizza le API di **Google Gemini (Gemini 2.5 Flash / 1.5 Flash)**, che Google offre con un piano **100% gratuito**:
+L'app utilizza le API di **Google Gemini (Gemini 3.8 Flash / 3.5 Flash Lite)**, che Google offre con un piano **100% gratuito**:
 1. Accedi a [Google AI Studio](https://aistudio.google.com/app/apikey) con il tuo normale account Google.
 2. Clicca su **"Create API key"** (Crea chiave API).
 3. Copia la chiave generata (inizia con `AIzaSy...`).
