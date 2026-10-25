@@ -74,4 +74,31 @@ parsedDirect.quiz.push({"domanda": "Dove finisce la pioggia?", "opzioni": ["Nei 
 assert(validateLesson(parsedDirect) === true, 'Lesson validation failed');
 console.log('✓ Schema validation passed');
 
+// Test E: Multi-image Gemini parts builder
+function buildGeminiParts(images, prompt, manualText) {
+  const parts = [];
+  images.forEach(img => {
+    parts.push({
+      inline_data: {
+        mime_type: img.mimeType,
+        data: img.base64
+      }
+    });
+  });
+  parts.push({
+    text: prompt + (manualText ? `\n\nNote:\n${manualText}` : '')
+  });
+  return parts;
+}
+
+const mockPages = [
+  { mimeType: 'image/jpeg', base64: 'page1data' },
+  { mimeType: 'image/jpeg', base64: 'page2data' }
+];
+const partsResult = buildGeminiParts(mockPages, 'Prompt', '');
+assert(partsResult.length === 3, 'Multi-page parts count mismatch');
+assert(partsResult[0].inline_data.data === 'page1data');
+assert(partsResult[1].inline_data.data === 'page2data');
+console.log('✓ Multi-page Gemini payload verification passed');
+
 console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');

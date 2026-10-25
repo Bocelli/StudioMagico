@@ -144,7 +144,7 @@ const App = {
   voice: new VoiceNarrator(),
   currentLesson: null,
   activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz' | 'curiosita'
-  uploadedImageBase64: null,
+  uploadedImages: [], // Array of { id, dataUrl, mimeType, base64, name }
   currentCardIndex: 0,
   currentQuizIndex: 0,
   quizAnswersState: {}, // { [qIdx]: { selected: number, isCorrect: boolean, attempts: number } }
@@ -281,8 +281,6 @@ const App = {
     const openUploadBtn = document.getElementById('openUploadBtn');
     const uploadModal = document.getElementById('uploadModal');
     const closeUploadBtn = document.getElementById('closeUploadBtn');
-    const fileInput = document.getElementById('bookPhotoInput');
-    const cameraInput = document.getElementById('cameraPhotoInput');
     const analyzeBtn = document.getElementById('analyzeBtn');
 
     if (openUploadBtn && uploadModal) {
@@ -299,35 +297,58 @@ const App = {
       });
     }
 
-    // Image Handlers
-    const handleFile = (file) => {
-      if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        alert('Per favore seleziona un file immagine (JPG, PNG).');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.uploadedImageBase64 = e.target.result;
-        const preview = document.getElementById('photoPreview');
-        const previewImg = document.getElementById('photoPreviewImg');
-        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-        if (preview && previewImg && uploadPlaceholder) {
-          previewImg.src = e.target.result;
-          preview.classList.remove('hidden');
-          uploadPlaceholder.classList.add('hidden');
-          analyzeBtn.disabled = false;
-        }
-      };
-      reader.readAsDataURL(file);
+    // Multi-Image Handlers
+    const handleFiles = (fileList) => {
+      if (!fileList || fileList.length === 0) return;
+      Array.from(fileList).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          const mimeType = dataUrl.substring(5, dataUrl.indexOf(';'));
+          const base64 = dataUrl.split(',')[1];
+          this.uploadedImages.push({
+            id: 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            dataUrl: dataUrl,
+            mimeType: mimeType,
+            base64: base64,
+            name: file.name
+          });
+          this.renderUploadedPagesPreview();
+          this.sound.pop();
+        };
+        reader.readAsDataURL(file);
+      });
     };
 
+    const fileInput = document.getElementById('bookPhotoInput');
+    const cameraInput = document.getElementById('cameraPhotoInput');
+    const fileInputMore = document.getElementById('bookPhotoInputMore');
+    const cameraInputMore = document.getElementById('cameraPhotoInputMore');
+
     if (fileInput) {
-      fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+      fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        fileInput.value = '';
+      });
     }
     if (cameraInput) {
-      cameraInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+      cameraInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        cameraInput.value = '';
+      });
+    }
+    if (fileInputMore) {
+      fileInputMore.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        fileInputMore.value = '';
+      });
+    }
+    if (cameraInputMore) {
+      cameraInputMore.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        cameraInputMore.value = '';
+      });
     }
 
     // Drag and Drop
@@ -343,8 +364,8 @@ const App = {
       dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('border-blue-500', 'bg-blue-50');
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          handleFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFiles(e.dataTransfer.files);
         }
       });
     }
@@ -857,6 +878,56 @@ const App = {
     }
   },
 
+  // --- Multi-Page Upload Preview & Management ---
+  renderUploadedPagesPreview() {
+    const preview = document.getElementById('photoPreview');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const grid = document.getElementById('uploadedPagesGrid');
+    const badge = document.getElementById('pagesCountBadge');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    if (!preview || !uploadPlaceholder || !grid) return;
+
+    if (this.uploadedImages.length === 0) {
+      preview.classList.add('hidden');
+      uploadPlaceholder.classList.remove('hidden');
+      if (analyzeBtn) {
+        const manualText = document.getElementById('manualTextInput')?.value.trim();
+        analyzeBtn.disabled = !manualText;
+      }
+      return;
+    }
+
+    uploadPlaceholder.classList.add('hidden');
+    preview.classList.remove('hidden');
+    if (analyzeBtn) analyzeBtn.disabled = false;
+
+    if (badge) {
+      const count = this.uploadedImages.length;
+      badge.innerText = `${count} ${count === 1 ? 'pagina caricata' : 'pagine caricate'} ✅`;
+    }
+
+    grid.innerHTML = this.uploadedImages.map((img, idx) => `
+      <div class="relative bg-white rounded-2xl border-2 border-slate-200 p-2 shadow-sm flex flex-col items-center">
+        <span class="absolute top-1 left-1 bg-indigo-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow">
+          Pagina ${idx + 1}
+        </span>
+        <button onclick="App.removeUploadedPage('${img.id}')" 
+                class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs flex items-center justify-center shadow-md transition-transform hover:scale-110"
+                title="Rimuovi questa pagina">
+          ✕
+        </button>
+        <img src="${img.dataUrl}" alt="Pagina ${idx + 1}" class="w-full h-24 object-cover rounded-xl mt-3 mb-1 border border-slate-100">
+      </div>
+    `).join('');
+  },
+
+  removeUploadedPage(id) {
+    this.sound.pop();
+    this.uploadedImages = this.uploadedImages.filter(img => img.id !== id);
+    this.renderUploadedPagesPreview();
+  },
+
   // --- AI Analysis with Google Gemini Free API ---
   async analyzeLessonWithAi() {
     const apiKey = localStorage.getItem('gemini_api_key');
@@ -872,8 +943,8 @@ const App = {
       return;
     }
 
-    if (!this.uploadedImageBase64 && (!manualTextInput || !manualTextInput.value.trim())) {
-      alert("Carica prima una foto della pagina del libro o scrivi qualche appunto!");
+    if (this.uploadedImages.length === 0 && (!manualTextInput || !manualTextInput.value.trim())) {
+      alert("Carica o scatta prima almeno una foto della pagina del libro o scrivi qualche appunto!");
       return;
     }
 
@@ -881,7 +952,7 @@ const App = {
     if (loadingState) loadingState.classList.remove('hidden');
 
     const loadingSteps = [
-      "Leo sta leggendo le pagine del tuo libro... 📖",
+      `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
       "Estraendo le idee più importanti e le parole magiche... ✨",
       "Scrivendo la storia divertente per la 3ª elementare... ✏️",
       "Creando il Super Quiz con aiutini amichevoli... 🎯"
@@ -894,7 +965,8 @@ const App = {
 
     const promptText = `
 Sei "Leo", il compagno di studio più empatico, chiaro e simpatico per bambini di 3ª elementare (8-9 anni).
-Il bambino fa fatica con il noioso "leggi e ripeti". Trasforma il contenuto della lezione nella foto o negli appunti in un metodo di studio coinvolgente.
+Il bambino fa fatica con il noioso "leggi e ripeti". 
+${this.uploadedImages.length > 1 ? `Ci sono ${this.uploadedImages.length} pagine del libro caricate in sequenza relative allo stesso argomento. Analizzale insieme come un'unica lezione coerente e completa.` : 'Analizza la pagina del libro fornita.'}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
@@ -925,17 +997,15 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 
     try {
       const parts = [];
-      if (this.uploadedImageBase64) {
-        // Strip data:image/xxx;base64, prefix
-        const mimeType = this.uploadedImageBase64.substring(5, this.uploadedImageBase64.indexOf(';'));
-        const base64Data = this.uploadedImageBase64.split(',')[1];
+      // Push all uploaded pages in order
+      this.uploadedImages.forEach((img) => {
         parts.push({
           inline_data: {
-            mime_type: mimeType,
-            data: base64Data
+            mime_type: img.mimeType,
+            data: img.base64
           }
         });
-      }
+      });
 
       const manualText = manualTextInput ? manualTextInput.value.trim() : '';
       parts.push({
@@ -989,14 +1059,15 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       if (analyzeBtn) analyzeBtn.disabled = false;
 
       // Clear upload inputs
-      this.uploadedImageBase64 = null;
+      this.uploadedImages = [];
+      this.renderUploadedPagesPreview();
       if (manualTextInput) manualTextInput.value = '';
 
       this.sound.fanfare();
       this.loadLesson(parsedLesson);
       this.renderSavedLessonsList();
       this.switchTab('storia');
-      this.setMascotMessage("Evviva! Ho trasformato la pagina del tuo libro in un gioco! Iniziamo dalla storia! 🚀", true);
+      this.setMascotMessage("Evviva! Ho trasformato tutte le pagine del tuo libro in un gioco! Iniziamo dalla storia! 🚀", true);
 
     } catch (err) {
       clearInterval(interval);
@@ -1004,7 +1075,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       if (analyzeBtn) analyzeBtn.disabled = false;
       this.sound.hint();
       console.error(err);
-      alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che la foto sia ben illuminata.");
+      alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
     }
   },
 

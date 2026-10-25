@@ -9,7 +9,8 @@ L'app sfrutta l'**Intelligenza Artificiale gratuita (Google Gemini)** combinata 
 ## 🎯 Perché Aiuta Tuo Figlio a Studiare da Solo
 
 1. **Addio muri di testo noiosi**: L'IA trasforma la lezione in una **favola/avventura avvincente** con parole semplici, frasi corte ed esempi della vita quotidiana adatti a un bambino di 8 anni.
-2. **Lettura Vocale con Leo il Robot 🔊**: Grazie alla sintesi vocale in italiano integrata nel browser (*Web Speech API*), il bambino può premere un pulsante e ascoltare la spiegazione e le domande lette ad alta voce da Leo con cuffie o altoparlanti, permettendoti di dedicarti ad altro in tranquillità.
+2. **Supporto Multi-Pagina 📸**: Puoi scattare o caricare più pagine dello stesso argomento (es. pagina 42 e 43). L'IA le analizzerà in sequenza come un'unica lezione coerente!
+3. **Lettura Vocale con Leo il Robot 🔊**: Grazie alla sintesi vocale in italiano integrata nel browser (*Web Speech API*), il bambino può premere un pulsante e ascoltare la spiegazione e le domande lette ad alta voce da Leo con cuffie o altoparlanti, permettendoti di dedicarti ad altro in tranquillità.
 3. **Flashcard Magiche 3D 🗂️**: Carte interattive che si girano con un tocco per scoprire il significato delle parole chiave e i concetti fondamentali con icone e spiegazioni immediate.
 4. **Super Quiz Gamificato 🎯**:
    - Domande a risposta multipla a caratteri grandi e pulsanti facili da toccare.
