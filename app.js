@@ -1044,68 +1044,78 @@ const App = {
         if (loadingText) loadingText.innerText = loadingSteps[stepIdx];
       }, 3000);
 
+      const totalPages = this.uploadedImages.length;
+      const targetCount = totalPages > 1 ? Math.min(6, Math.max(4, totalPages * 2)) : 3;
+
       const promptText = `
-Sei "Leo", il tutor di studio per bambini di 3ª elementare (8-9 anni).
-Dalle pagine caricate, crea una spiegazione chiara e coinvolgente.
-Sii sintetico, chiaro, usa frasi brevi con metafore semplici.
+Sei "Leo", il magico tutor di studio per bambini di 3ª elementare (8-9 anni).
+Il tuo compito è spiegare le pagine del libro scolastico in modo chiaro, avventuroso ed entusiasmante.
+
+REGOLE FONDAMENTALI SULLE PAGINE:${totalPages > 1 ? `
+- ATTENZIONE CRUCIALE: Sono state caricate ${totalPages} PAGINE CONSECUTIVE del libro (contrassegnate come PAGINA 1, PAGINA 2, ecc.).
+- DEVI SINTETIZZARE ED INCLUDERE OBBLIGATORIAMENTE TUTTE LE ${totalPages} PAGINE! Non fermarti alla prima pagina.
+- La "storia_semplice" DEVE spiegare gli argomenti di TUTTE le pagine in ordine cronologico e logico (dedica almeno 1-2 paragrafi per ciascuna pagina caricata, per un totale di 4-6 paragrafi). Unisci il tutto in un'unica storia avvincente.
+- Le "parole_chiave" DEVONO essere ${targetCount} e distribuite tra tutte le pagine caricate (almeno una/due per ciascuna pagina).
+- Il "quiz" DEVE avere ${targetCount} domande che verifichino la comprensione di TUTTE le pagine (distribuisci le domande equamente tra la prima pagina e le pagine successive).` : `
+- Spiega in modo chiaro e completo il contenuto della pagina caricata.
+- "storia_semplice" in 3-4 paragrafi con linguaggio semplice e metafore quotidiane adatte a 8 anni.
+- 3 parole chiave essenziali con emoji e spiegazione amichevole.
+- 3 domande quiz a scelta multipla con indizio per chi sbaglia.`}
+
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
-  "titolo": "Titolo accattivante della lezione",
+  "titolo": "Titolo accattivante dell'argomento",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "storia_semplice": "Un racconto scorrevole di 3-4 brevi paragrafi che spiega la lezione come un'avventura.",
+  "storia_semplice": "Il racconto avventuroso suddiviso in paragrafi usando \\n\\n tra un paragrafo e l'altro...",
   "parole_chiave": [
     {
-      "termine": "Concetto 1",
-      "emoji": "Icona",
-      "spiegazione": "Definizione semplice in 1 o 2 frasi."
-    },
-    {
-      "termine": "Concetto 2",
-      "emoji": "Icona",
-      "spiegazione": "Definizione semplice in 1 o 2 frasi."
-    },
-    {
-      "termine": "Concetto 3",
-      "emoji": "Icona",
-      "spiegazione": "Definizione semplice in 1 o 2 frasi."
+      "termine": "Concetto chiave",
+      "emoji": "Icona adatta",
+      "spiegazione": "Definizione semplice e simpatica in 1 o 2 frasi."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda chiara?",
-      "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
+      "domanda": "Domanda stimolante per il bambino?",
+      "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
       "risposta_corretta": 0,
-      "indizio": "Un aiutino amichevole per chi sbaglia."
-    },
-    {
-      "domanda": "Seconda domanda?",
-      "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
-      "risposta_corretta": 1,
-      "indizio": "Un aiutino amichevole."
-    },
-    {
-      "domanda": "Terza domanda?",
-      "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
-      "risposta_corretta": 2,
-      "indizio": "Un aiutino amichevole."
+      "indizio": "Un aiutino giocoso per chi sbaglia."
     }
   ],
   "curiosita": [
-    "Un fatto sorprendente per dire 'Wow!' sulla lezione."
+    "Fatto curioso 1",
+    "Fatto curioso 2"
   ],
-  "sfida_veloce": "Una mini sfida da mimare o fare in 30 secondi."
+  "sfida_veloce": "Mini sfida attiva da fare subito in 30 secondi!"
 }
 `;
 
       const parts = [];
-      // Push all compressed pages in order
-      this.uploadedImages.forEach((img) => {
+
+      if (totalPages > 1) {
+        parts.push({
+          text: `AVVISO: In questo messaggio sono allegate ${totalPages} pagine consecutive numerate in sequenza (Pagina 1, Pagina 2...). Leggi, analizza e integra TUTTE le ${totalPages} pagine nel riassunto!`
+        });
+      }
+
+      // Push all compressed pages in order with explicit demarcation headers
+      this.uploadedImages.forEach((img, idx) => {
+        if (totalPages > 1) {
+          parts.push({
+            text: `--- [INIZIO FOTO PAGINA ${idx + 1} DI ${totalPages}] ---`
+          });
+        }
         parts.push({
           inline_data: {
             mime_type: img.mimeType || 'image/jpeg',
             data: img.base64
           }
         });
+        if (totalPages > 1) {
+          parts.push({
+            text: `--- [FINE FOTO PAGINA ${idx + 1} DI ${totalPages}] ---`
+          });
+        }
       });
 
       const manualText = manualTextInput ? manualTextInput.value.trim() : '';

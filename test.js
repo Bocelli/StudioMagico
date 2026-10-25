@@ -74,16 +74,32 @@ parsedDirect.quiz.push({"domanda": "Dove finisce la pioggia?", "opzioni": ["Nei 
 assert(validateLesson(parsedDirect) === true, 'Lesson validation failed');
 console.log('✓ Schema validation passed');
 
-// Test E: Multi-image Gemini parts builder
+// Test E: Multi-image Gemini parts builder with explicit page demarcation
 function buildGeminiParts(images, prompt, manualText) {
   const parts = [];
-  images.forEach(img => {
+  const totalPages = images.length;
+  if (totalPages > 1) {
+    parts.push({
+      text: `AVVISO: In questo messaggio sono allegate ${totalPages} pagine consecutive numerate in sequenza (Pagina 1, Pagina 2...). Leggi, analizza e integra TUTTE le ${totalPages} pagine nel riassunto!`
+    });
+  }
+  images.forEach((img, idx) => {
+    if (totalPages > 1) {
+      parts.push({
+        text: `--- [INIZIO FOTO PAGINA ${idx + 1} DI ${totalPages}] ---`
+      });
+    }
     parts.push({
       inline_data: {
         mime_type: img.mimeType,
         data: img.base64
       }
     });
+    if (totalPages > 1) {
+      parts.push({
+        text: `--- [FINE FOTO PAGINA ${idx + 1} DI ${totalPages}] ---`
+      });
+    }
   });
   parts.push({
     text: prompt + (manualText ? `\n\nNote:\n${manualText}` : '')
@@ -96,10 +112,15 @@ const mockPages = [
   { mimeType: 'image/jpeg', base64: 'page2data' }
 ];
 const partsResult = buildGeminiParts(mockPages, 'Prompt', '');
-assert(partsResult.length === 3, 'Multi-page parts count mismatch');
-assert(partsResult[0].inline_data.data === 'page1data');
-assert(partsResult[1].inline_data.data === 'page2data');
-console.log('✓ Multi-page Gemini payload verification passed');
+assert(partsResult.length === 8, `Expected 8 parts for 2-page payload, got ${partsResult.length}`);
+assert(partsResult[0].text.includes('AVVISO'), 'Missing multi-page notice');
+assert(partsResult[1].text.includes('INIZIO FOTO PAGINA 1 DI 2'), 'Missing page 1 start delimiter');
+assert(partsResult[2].inline_data.data === 'page1data', 'Page 1 image missing');
+assert(partsResult[3].text.includes('FINE FOTO PAGINA 1 DI 2'), 'Missing page 1 end delimiter');
+assert(partsResult[4].text.includes('INIZIO FOTO PAGINA 2 DI 2'), 'Missing page 2 start delimiter');
+assert(partsResult[5].inline_data.data === 'page2data', 'Page 2 image missing');
+assert(partsResult[6].text.includes('FINE FOTO PAGINA 2 DI 2'), 'Missing page 2 end delimiter');
+console.log('✓ Multi-page Gemini demarcated payload verification passed');
 
 // Test F: Gemini 3.8 Thinking Block Separator
 function extractTextFromParts(parts) {
