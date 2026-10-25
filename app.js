@@ -1113,46 +1113,82 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      // Target gemini-3.8-flash (sanitize any legacy 2.5 entries in localStorage)
-      let modelName = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
-      if (modelName.includes('2.5')) {
-        modelName = 'gemini-3.8-flash';
-        localStorage.setItem('gemini_selected_model', 'gemini-3.8-flash');
-      }
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      // Candidate models for automatic high-demand failover
+      const candidateModels = ['gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      let data = null;
+      let lastErrorMessage = '';
+      let usedModel = 'gemini-3.8-flash';
 
-      // 120 seconds timeout so Gemini has plenty of time for 2+ textbook pages
       const timeoutId = setTimeout(() => abortController.abort(), 120000);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        signal: abortController.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: parts
-          }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-            thinkingConfig: {
-              thinkingLevel: "low"
-            }
+      for (const modelToCall of candidateModels) {
+        usedModel = modelToCall;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToCall}:generateContent?key=${apiKey}`;
+
+        const genConfig = {
+          responseMimeType: "application/json",
+          temperature: 0.2
+        };
+        if (modelToCall.includes('3.8')) {
+          genConfig.thinkingConfig = { thinkingLevel: "low" };
+        }
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            signal: abortController.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: parts
+              }],
+              generationConfig: genConfig
+            })
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            break; // Success!
           }
-        })
-      });
+
+          const errData = await response.json().catch(() => ({}));
+          lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
+          console.warn(`Modello ${modelToCall} non disponibile (${lastErrorMessage}), provo il modello alternativo...`);
+
+          // If the model is experiencing high demand (503 / 429) or spikes, fallback immediately
+          const isOverloaded = response.status === 503 ||
+                               response.status === 429 ||
+                               lastErrorMessage.toLowerCase().includes('high demand') ||
+                               lastErrorMessage.toLowerCase().includes('unavailable') ||
+                               lastErrorMessage.toLowerCase().includes('overloaded');
+
+          if (isOverloaded) {
+            if (loadingText) {
+              loadingText.innerText = `Server ${modelToCall} occupato, provo il modello alternativo... 🔄`;
+            }
+            continue; // Try next model immediately!
+          } else {
+            throw new Error(lastErrorMessage);
+          }
+        } catch (callErr) {
+          if (callErr.name === 'AbortError') throw callErr;
+          lastErrorMessage = callErr.message;
+          if (lastErrorMessage.toLowerCase().includes('high demand') || lastErrorMessage.toLowerCase().includes('unavailable')) {
+            continue;
+          }
+          throw callErr;
+        }
+      }
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `Errore HTTP ${response.status}`);
+      if (!data) {
+        throw new Error(lastErrorMessage || "I server di Google sono momentaneamente saturi. Riprova tra 1 minuto.");
       }
 
-      const data = await response.json();
       const candParts = data.candidates?.[0]?.content?.parts || [];
-      // In Gemini 3.8 Flash, pick the non-thought part that contains the final JSON
+      // Pick the non-thought part that contains the final JSON
       const textPart = candParts.slice().reverse().find(p => p.text && !p.thought) || candParts[0];
       const rawText = textPart?.text;
       if (!rawText) throw new Error("La risposta dell'IA era vuota. Riprova con una foto più nitida.");
@@ -1192,7 +1228,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       if (errorBox && errorMsg) {
         errorMsg.innerText = err.message || "Errore sconosciuto";
         if (errorDetails) {
-          errorDetails.innerText = `Modello chiamato: ${typeof modelName !== 'undefined' ? modelName : 'gemini-3.8-flash'} | Tempo: ${elapsedSeconds}s | ${new Date().toLocaleTimeString()}`;
+          errorDetails.innerText = `Modello chiamato: ${typeof usedModel !== 'undefined' ? usedModel : 'gemini-3.8-flash'} | Tempo: ${elapsedSeconds}s | ${new Date().toLocaleTimeString()}`;
         }
         errorBox.classList.remove('hidden');
       }
