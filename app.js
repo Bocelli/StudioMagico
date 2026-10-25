@@ -209,21 +209,44 @@ class VoiceNarrator {
   speakWithOnlineHd(text, onStart, onEnd) {
     if (onStart) onStart();
 
-    // Chunk into ~120 character natural word segments for Google Translate TTS
-    const words = text.split(' ');
+    // Natural phrase chunking splitting at commas and sentence endings
+    const rawParts = text.match(/[^,.;!?]+[,.;!?]*/g) || [text];
     const chunks = [];
     let current = '';
-    for (const w of words) {
-      if ((current + ' ' + w).trim().length <= 130) {
-        current = (current + ' ' + w).trim();
+
+    for (const part of rawParts) {
+      const p = part.trim();
+      if (!p) continue;
+      if ((current + ' ' + p).trim().length <= 110) {
+        current = (current + ' ' + p).trim();
       } else {
         if (current) chunks.push(current);
-        current = w;
+        if (p.length <= 110) {
+          current = p;
+        } else {
+          const words = p.split(' ');
+          for (const w of words) {
+            if ((current + ' ' + w).trim().length <= 110) {
+              current = (current + ' ' + w).trim();
+            } else {
+              if (current) chunks.push(current);
+              current = w;
+            }
+          }
+        }
       }
     }
     if (current) chunks.push(current);
 
+    if (chunks.length === 0) {
+      this.isSpeaking = false;
+      if (onEnd) onEnd();
+      return;
+    }
+
     let idx = 0;
+    let fallbackCount = 0;
+
     const playNext = () => {
       if (!this.isSpeaking || idx >= chunks.length) {
         this.isSpeaking = false;
@@ -232,23 +255,44 @@ class VoiceNarrator {
       }
 
       const chunk = chunks[idx++];
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=it&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-      this.audioElement = new Audio(url);
-      this.audioElement.playbackRate = this.speechRate || 1.0;
+      // Primary: Vercel serverless proxy (/api/tts), Secondary: Direct Google endpoint with no-referrer
+      const primaryUrl = `/api/tts?text=${encodeURIComponent(chunk)}&lang=it`;
+      const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=it&client=tw-ob&q=${encodeURIComponent(chunk)}`;
 
-      this.audioElement.onended = () => {
-        // Natural breath pause between phrases (60ms)
-        setTimeout(playNext, 60);
+      const audio = new Audio();
+      audio.referrerPolicy = 'no-referrer';
+      audio.playbackRate = this.speechRate || 1.0;
+      this.audioElement = audio;
+
+      audio.onended = () => {
+        // Natural small pause between phrases (80ms)
+        setTimeout(playNext, 80);
       };
 
-      this.audioElement.onerror = (e) => {
-        console.warn("Online audio chunk error, continuing to next", e);
-        playNext();
+      const handleFailure = () => {
+        fallbackCount++;
+        if (fallbackCount >= 2) {
+          // Both online methods failed (e.g. offline): Seamless fallback to device synthesis
+          console.warn("Online audio unavailable, switching to native speech");
+          this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
+        } else {
+          // Try fallback direct URL
+          audio.onerror = () => {
+            console.warn("Fallback direct URL failed too, switching to native speech");
+            this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
+          };
+          audio.src = fallbackUrl;
+          audio.play().catch(() => {
+            this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
+          });
+        }
       };
 
-      this.audioElement.play().catch(e => {
-        console.warn("Audio play blocked, fallback to native speech", e);
-        this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
+      audio.onerror = handleFailure;
+      audio.src = primaryUrl;
+      audio.play().catch((e) => {
+        console.warn("Primary audio play blocked or error:", e);
+        handleFailure();
       });
     };
 
