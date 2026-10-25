@@ -5,37 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudioMagico 🚀 - Il Tuo Compagno di Studio per le Elementari</title>
 
-  <!-- Google Fonts: Fredoka (Playful rounded headings) & Nunito (Readable, friendly body) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            heading: ['Fredoka', 'sans-serif'],
-            body: ['Nunito', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              blue: '#3B82F6',
-              amber: '#F59E0B',
-              coral: '#F97316',
-              green: '#10B981',
-              purple: '#8B5CF6'
-            }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Canvas Confetti for Celebrations -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Local assets (work offline): fonts, compiled Tailwind (npm run build:css), confetti -->
+  <link rel="stylesheet" href="vendor/fonts.css">
+  <link rel="stylesheet" href="vendor/tailwind.css?v=12">
+  <script src="vendor/confetti.browser.min.js"></script>
 
   <!-- Custom Kid UI Stylesheet -->
   <link rel="stylesheet" href="style.css">
@@ -374,6 +347,9 @@
           <p class="text-[11px] text-blue-700 mt-2 font-semibold">
             Nota: Google offre il modello Gemini Flash completamente <strong>GRATIS</strong> con limiti ampiamente sufficienti per lo studio quotidiano!
           </p>
+          <p class="text-[11px] text-amber-800 mt-2 font-semibold">
+            Privacy: le foto delle pagine vengono inviate a Google per l'analisi. Con il piano gratuito Google può usare i dati per migliorare i suoi servizi: evita foto con volti o dati personali. Le lezioni create dall'IA possono contenere errori: controllale insieme al bambino.
+          </p>
         </div>
 
         <div>
@@ -391,6 +367,7 @@
             <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash (Raccomandato & Gratuito)</option>
             <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Ultra Rapido)</option>
             <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
           </select>
         </div>
 
@@ -453,7 +430,8 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="demo-data.js?v=12"></script>
+  <script src="lib.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

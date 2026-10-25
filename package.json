@@ -4,11 +4,19 @@
   "description": "App di studio intelligente e giocosa per bambini della scuola primaria con IA gratuita (Gemini)",
   "main": "server.js",
   "scripts": {
-    "build": "echo 'Build OK'",
     "start": "node server.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "build:css": "npx --yes tailwindcss@3.4.17 -c tailwind.config.js -i tailwind.input.css -o vendor/tailwind.css --minify",
+    "build": "echo 'Build OK'"
   },
-  "keywords": ["scuola-elementare", "studio-ia", "gemini", "bambini", "quiz", "flashcard"],
+  "keywords": [
+    "scuola-elementare",
+    "studio-ia",
+    "gemini",
+    "bambini",
+    "quiz",
+    "flashcard"
+  ],
   "author": "Antigravity + Ponytail",
   "license": "MIT"
 }
