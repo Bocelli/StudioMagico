@@ -55,7 +55,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.2 (Gemini 3.8)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.3 (Gemini 3.8)</span></span>
         </div>
       </div>
 
@@ -344,6 +344,15 @@
         </button>
       </div>
 
+      <!-- AI Error Box -->
+      <div id="aiErrorBox" class="hidden p-4 bg-red-50 border-2 border-red-300 rounded-2xl mb-4 text-left">
+        <div class="flex items-center gap-2 text-red-800 font-bold mb-1">
+          <span>⚠️</span><span class="text-sm">Dettaglio Errore:</span>
+        </div>
+        <p id="aiErrorMsg" class="text-xs text-red-700 font-mono break-all whitespace-pre-wrap"></p>
+        <div class="mt-2 text-[11px] text-slate-500 font-mono" id="aiErrorDetails"></div>
+      </div>
+
       <!-- Action Button -->
       <button id="analyzeBtn" class="btn-tactile btn-emerald w-full py-3.5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg">
         <span>✨</span>
@@ -455,7 +464,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="demo-data.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

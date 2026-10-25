@@ -1016,11 +1016,16 @@ const App = {
       };
     }
 
+    let elapsedSeconds = 0;
+    const errorBox = document.getElementById('aiErrorBox');
+    const errorMsg = document.getElementById('aiErrorMsg');
+    const errorDetails = document.getElementById('aiErrorDetails');
+    if (errorBox) errorBox.classList.add('hidden');
+
     try {
       if (analyzeBtn) analyzeBtn.disabled = true;
       if (loadingState) loadingState.classList.remove('hidden');
 
-      let elapsedSeconds = 0;
       if (loadingTimer) loadingTimer.innerText = '0s';
       timerInterval = setInterval(() => {
         elapsedSeconds++;
@@ -1183,10 +1188,17 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 
     } catch (err) {
       this.sound.hint();
+      console.error("StudioMagico AI Error:", err);
+      if (errorBox && errorMsg) {
+        errorMsg.innerText = err.message || "Errore sconosciuto";
+        if (errorDetails) {
+          errorDetails.innerText = `Modello chiamato: ${typeof modelName !== 'undefined' ? modelName : 'gemini-3.8-flash'} | Tempo: ${elapsedSeconds}s | ${new Date().toLocaleTimeString()}`;
+        }
+        errorBox.classList.remove('hidden');
+      }
       if (err.name === 'AbortError') {
         alert("Elaborazione interrotta (timeout o annullata). Riprova!");
       } else {
-        console.error(err);
         alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
       }
     } finally {
