@@ -1186,53 +1186,53 @@ const App = {
       }, 3000);
 
       const totalPages = this.uploadedImages.length;
-      // Generous target: at least 5 for 1 page, 7-10 for multi-page
-      const targetCount = totalPages > 1 ? Math.min(10, Math.max(7, totalPages * 4)) : 5;
+      // Target for flashcards and quiz (balanced for kid memory)
+      const targetCount = totalPages > 1 ? Math.min(8, Math.max(5, totalPages * 3)) : 4;
 
       const promptText = `
-Sei un autore esperto di testi divulgativi e scolastici per bambini di 3ª elementare (8-9 anni).
-Il tuo obiettivo è spiegare tutti i contenuti delle pagine caricate con una SPIEGAZIONE OMOGENEA, CONTINUA E SCORREVOLE, piacevole da leggere come un bel racconto informativo per ragazzi, insieme a flashcard e quiz per consolidare lo studio.
+Sei un maestro di scuola elementare specializzato nel rendere le lezioni BREVI, CHIARE e ACCATTIVANTI per bambini di 3ª elementare (8-9 anni).
+Il tuo obiettivo è spiegare il succo della lezione con un TESTO CORTISSIMO, SCATTANTE E FACILE DA MEMORIZZARE (divorabile in meno di 1 minuto!).
 
-REGOLE FONDAMENTALI SULLA STRUTTURA DEL TESTO (campo "riassunto"):
-1. TESTO CONTINUO E UNITARIO (SENZA SCHEMI STEP-BY-STEP O ELENCHI):
-   - Scrivi una narrazione fluida e continua suddivisa in 3-5 paragrafi ben spaziati (usa doppi a capo \\n\\n tra un paragrafo e l'altro).
-   - NON usare elenchi puntati (niente trattini -, niente pallini •).
-   - NON usare titoli o etichette rigide a sezioni (NIENTE "📌 INTRODUZIONE", NIENTE "🔍 PUNTI PRINCIPALI", NIENTE "💡 IN SINTESI", NIENTE "Step 1/2").
-   - I paragrafi devono scorrere in modo armonioso dall'inizio alla fine, collegando tutte le nozioni, le figure e le scoperte in una spiegazione omogenea e appassionante.
+REGOLE TASSATIVE SULLA LUNGHEZZA E SEMPLICITÀ (campo "riassunto"):
+1. MASSIMA BREVITÀ (VIETATO dilungarsi, appesantire o fare trattati):
+   - Scrivi ESATTAMENTE 2 (o al massimo 3) brevissimi paragrafi.
+   - Lunghezza totale: tra 80 e 120 parole complessive (NON di più!).
+   - Il bambino deve leggerlo o ascoltarlo in 45-60 secondi senza stancarsi.
+   - Usa frasi corte, dirette e limpide (massimo 10-12 parole per frase).
 
-2. COMPLETEZZA SULLE PAGINE:
-   - Spiega con cura e precisione TUTTI i concetti, i mestieri, le definizioni o le fasi presenti nelle pagine caricate, integrando tutto nel testo senza tralasciare nulla.
-   - Evidenzia le parole chiave fondamentali in **grassetto** direttamente all'interno delle frasi per facilitare la memoria visiva del bambino.
+2. SOLO IL SUCCO ESSENZIALE:
+   - Spiega SOLO i concetti chiave indispensabili per la scuola, tagliando via dettagli secondari e chiacchiere.
+   - Metti in **grassetto** solo i 3 o 4 termini più importanti.
+   - Niente elenchi puntati, niente titoletti ("📌 Introduzione" o simili), niente preamboli e nessuna conclusione cerimoniosa: vai dritto al punto fin dalla prima parola!
 
-3. STILE ADATTO A UN BAMBINO DI 8 ANNI (SENZA FORZATURE INFANTILI):
-   - Usa un lessico chiaro, semplice e coinvolgente, con frasi brevi e ritmo piacevole.
-   - NON usare formule finte o roleplay infantile (NIENTE "Ciao sono Leo", NIENTE "Ciao piccolo esploratore", NIENTE "C'era una volta", NIENTE "Ma l'avventura continua nella pagina successiva").
-   - Il tono deve essere caldo, istruttivo e limpido, come nei migliori libri di lettura per ragazzi.
+3. TONO FRESCO, LIMPIDO E SERIO:
+   - Stile in terza persona, chiaro, incoraggiante e immediato.
+   - Niente roleplay infantile ("Ciao sono Leo", "Ciao piccolo esploratore", "Nella pagina successiva").
 
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine consecutive. Il testo deve unire ed esporre TUTTE le ${totalPages} pagine in un unico racconto logico e continuativo, e le ${targetCount} flashcard e ${targetCount} quiz devono verificare tutte le pagine!` : ''}
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Riassumi il succo di tutte le pagine in questi 2-3 brevi paragrafi, e genera ${targetCount} flashcard e ${targetCount} quiz.` : ''}
 
 REQUISITI PER FLASHCARD E QUIZ:
-- "parole_chiave": ${targetCount} flashcard con termine, emoji adatta e spiegazione semplice in 1 o 2 frasi.
-- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un utile indizio per chi sbaglia.
+- "parole_chiave": ${targetCount} flashcard con i termini essenziali e spiegazione semplice in una sola frase.
+- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni e un aiutino amichevole per verificare la comprensione.
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
-  "titolo": "Titolo chiaro e corretto della lezione",
+  "titolo": "Titolo breve e chiaro",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "riassunto": "Primo paragrafo continuo che introduce l'argomento e i concetti chiave con **termini in grassetto**...\\n\\nSecondo paragrafo continuo che prosegue la spiegazione collegando gli elementi in modo naturale...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude con una riflessione chiara...",
+  "riassunto": "Primo breve paragrafo che spiega subito il tema con i **termini chiave** (2-3 frasi corte)...\\n\\nSecondo breve paragrafo che completa il succo essenziale della lezione (2-3 frasi corte)...",
   "parole_chiave": [
     {
       "termine": "Concetto chiave",
       "emoji": "Icona adatta",
-      "spiegazione": "Definizione chiara e semplice in 1 o 2 frasi."
+      "spiegazione": "Definizione brevissima e chiara in una sola frase."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda di verifica della comprensione?",
+      "domanda": "Domanda chiara per il bambino?",
       "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
       "risposta_corretta": 0,
-      "indizio": "Un aiutino chiaro per ragionare sulla risposta corretta."
+      "indizio": "Un aiutino semplice per ragionare."
     }
   ]
 }

@@ -292,5 +292,26 @@ Infine, **il cartografo** disegna le mappe e **il geologo** studia le rocce per 
   assert(!chunks[1].includes('*'), "Markdown asterisk remained in speech chunk");
   console.log('✓ Natural sentence chunker & speech prosody cleaner passed');
 
+  // Test J: Kid-sized summary word count & brevity check (terza elementare)
+  function checkKidSizedBrevity(text) {
+    const words = text.replace(/[*#•_~`>-]/g, ' ').trim().split(/\s+/).filter(Boolean);
+    const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
+    return {
+      wordCount: words.length,
+      paragraphCount: paragraphs.length,
+      isKidSized: words.length >= 40 && words.length <= 130 && paragraphs.length <= 3,
+      hasBannedPrefixes: /^(📌|🔍|💡|Step\s*\d|Ciao sono Leo|C'era una volta)/i.test(text.trim())
+    };
+  }
+
+  const sampleKidSummary = `La **geografia** studia la Terra e i suoi paesaggi naturali. Il geografo non lavora mai da solo, ma con una squadra di esperti fidati.
+
+Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre il **cartografo** disegna carte e mappe utilissime per tutti noi.`;
+
+  const brevityCheck = checkKidSizedBrevity(sampleKidSummary);
+  assert(brevityCheck.isKidSized, `Summary should be kid-sized (got ${brevityCheck.wordCount} words, ${brevityCheck.paragraphCount} paragraphs)`);
+  assert(!brevityCheck.hasBannedPrefixes, 'Kid summary must not contain banned robotic/childish prefixes');
+  console.log(`✓ Kid-sized ultra-concise brevity verification passed (${brevityCheck.wordCount} words in ${brevityCheck.paragraphCount} paragraphs)`);
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
