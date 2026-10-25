@@ -281,22 +281,7 @@ Infine, **il cartografo** disegna le mappe e **il geologo** studia le rocce per 
   assert(formattedNarrative.includes('<p>Infine,'), 'Third paragraph missing');
   console.log('✓ Continuous flowing narrative formatter passed');
 
-  // Test I: Speech Synthesis Sentence Chunker & Natural Cadence
-  function splitTextForSpeech(text) {
-    const cleaned = text.replace(/[*#•_~`>-]/g, ' ').replace(/\s+/g, ' ').trim();
-    const sentences = cleaned.match(/[^.!?:]+[.!?:]+/g) || [cleaned];
-    return sentences.map(s => s.trim()).filter(Boolean);
-  }
-
-  const sampleSpeechText = "La geografia è bellissima! Il **geografo** studia la Terra. Chi lo aiuta? Molti scienziati.";
-  const chunks = splitTextForSpeech(sampleSpeechText);
-  assert(chunks.length === 4, `Expected 4 sentence chunks, got ${chunks.length}`);
-  assert(chunks[0] === "La geografia è bellissima!", "Sentence 1 mismatch");
-  assert(chunks[1] === "Il geografo studia la Terra.", "Sentence 2 mismatch or bold tag not stripped");
-  assert(!chunks[1].includes('*'), "Markdown asterisk remained in speech chunk");
-  console.log('✓ Natural sentence chunker & speech prosody cleaner passed');
-
-  // Test J: Kid-sized summary word count & brevity check (terza elementare)
+  // Test I: Kid-sized summary word count & brevity check (terza elementare)
   function checkKidSizedBrevity(text) {
     const words = text.replace(/[*#•_~`>-]/g, ' ').trim().split(/\s+/).filter(Boolean);
     const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
@@ -317,7 +302,7 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(!brevityCheck.hasBannedPrefixes, 'Kid summary must not contain banned robotic/childish prefixes');
   console.log(`✓ Kid-sized ultra-concise brevity verification passed (${brevityCheck.wordCount} words in ${brevityCheck.paragraphCount} paragraphs)`);
 
-  // Test K: Key Points with brief explanations renderer & speech test
+  // Test J: Key Points with brief explanations renderer
   function renderKeyPointsHtml(cards) {
     return cards.map((item, idx) => `
       <div class="keypoint-card">
@@ -343,86 +328,6 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   const keyPointsHtml = renderKeyPointsHtml(sampleKeyPoints);
   assert(keyPointsHtml.includes('Il Fotografo') && keyPointsHtml.includes('Scatta fotografie'), 'Key points HTML generation failed');
   console.log(`✓ Key points with brief explanation verification & renderer passed (${sampleKeyPoints.length} points)`);
-
-  // Test L: Voice Quality Scoring & Robot Rejection (Cosimo/Desktop SAPI ban)
-  function scoreVoiceTest(v) {
-    const name = (v.name || '').toLowerCase();
-    if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi')) {
-      return -1000;
-    }
-    if (name.includes('natural') || name.includes('online')) return 1000;
-    if (name.includes('neural')) return 950;
-    if (name.includes('google')) return 900;
-    if (name.includes('enhanced') || name.includes('premium') || name.includes('siri')) return 800;
-    if (name.includes('network')) return 700;
-    if (name.includes('alice') || name.includes('federica') || name.includes('luca') || name.includes('isabella')) return 600;
-    return 100;
-  }
-
-  assert(scoreVoiceTest({ name: 'Microsoft Diego Online (Natural) - Italian (Italy)' }) === 1000, 'Natural voice should have highest score 1000');
-  assert(scoreVoiceTest({ name: 'Google italiano' }) === 900, 'Google italiano should score 900');
-  assert(scoreVoiceTest({ name: 'Microsoft Cosimo - Italian (Italy)' }) === -1000, 'Robotic Cosimo must be rejected with -1000 score');
-  assert(scoreVoiceTest({ name: 'Microsoft Elsa Desktop - Italian' }) === -1000, 'Legacy Elsa Desktop must be rejected');
-  console.log('✓ Voice quality scoring & robotic legacy voice rejection passed');
-
-  // Test M: Online HD Voice Text Chunker for smooth playback
-  function chunkForOnlineAudio(text, maxLen = 130) {
-    const words = text.replace(/[*#•_~`>-]/g, ' ').replace(/\s+/g, ' ').trim().split(' ');
-    const chunks = [];
-    let current = '';
-    for (const w of words) {
-      if ((current + ' ' + w).trim().length <= maxLen) {
-        current = (current + ' ' + w).trim();
-      } else {
-        if (current) chunks.push(current);
-        current = w;
-      }
-    }
-    if (current) chunks.push(current);
-    return chunks;
-  }
-
-  const sampleLongStory = "La geografia è la scienza meravigliosa che studia la Terra e i suoi paesaggi. Il geografo collabora con una squadra di esperti: il fotografo scatta foto dall'alto per vedere i cambiamenti, mentre il cartografo disegna le carte geografiche utilissime per orientarsi.";
-  const audioChunks = chunkForOnlineAudio(sampleLongStory, 130);
-  assert(audioChunks.length >= 2, 'Audio chunker should produce at least 2 safe chunks');
-  audioChunks.forEach(c => assert(c.length <= 135, `Chunk too long: ${c.length}`));
-  console.log(`✓ Online HD Voice text chunker passed (${audioChunks.length} chunks generated)`);
-
-  // Test N: Female Harmonious Teacher Personas & Matching
-  const personas = [
-    { id: 'sofia', name: '🌸 Maestra Sofia (Dolce & Armoniosa)', pitch: 1.08, rate: 0.90, preferred: ['isabella', 'elsa', 'alice'] },
-    { id: 'giulia', name: '☀️ Maestra Giulia (Solare & Vivace)', pitch: 1.15, rate: 0.94, preferred: ['alice', 'elsa'] },
-    { id: 'elena', name: '🌙 Maestra Elena (Calma & Chiara)', pitch: 1.02, rate: 0.88, preferred: ['elsa', 'isabella'] }
-  ];
-
-  personas.forEach(p => {
-    assert(p.pitch >= 1.0 && p.pitch <= 1.20, `Persona ${p.id} pitch out of natural sweet range`);
-    assert(p.rate >= 0.85 && p.rate <= 0.98, `Persona ${p.id} rate should be calm and storytelling-friendly`);
-  });
-
-  function pickFemaleVoiceTest(voices, persona) {
-    if (persona && persona.preferred) {
-      for (const pref of persona.preferred) {
-        const found = voices.find(v => (v.name || '').toLowerCase().includes(pref));
-        if (found) return found;
-      }
-    }
-    return voices.find(v => {
-      const n = (v.name || '').toLowerCase();
-      return n.includes('female') || n.includes('donna') || n.includes('isabella') || n.includes('alice') || n.includes('elsa') || n.includes('google');
-    }) || voices[0];
-  }
-
-  const sampleNativeVoices = [
-    { name: 'Microsoft Cosimo - Italian (Italy)' },
-    { name: 'Microsoft Diego Online (Natural) - Italian (Italy)' },
-    { name: 'Microsoft Isabella Online (Natural) - Italian (Italy)' },
-    { name: 'Microsoft Elsa - Italian (Italy)' }
-  ];
-
-  const matched = pickFemaleVoiceTest(sampleNativeVoices, personas[0]);
-  assert(matched.name.includes('Isabella'), 'Maestra Sofia must pick sweet Isabella voice');
-  console.log(`✓ Harmonious female teacher voice matching verified (matched: ${matched.name})`);
 
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

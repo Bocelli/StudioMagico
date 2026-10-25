@@ -70,370 +70,9 @@ class SoundEffects {
   }
 }
 
-// --- Voice Narrator (Web Speech API for Italian Children) ---
-class VoiceNarrator {
-  constructor() {
-    this.synth = window.speechSynthesis || null;
-    this.nativeVoices = [];
-    // Default to the warm, sweet female voice "sofia"
-    const savedId = localStorage.getItem('studio_magico_voice_id');
-    this.selectedVoiceId = (savedId && savedId !== 'online-hd') ? savedId : 'sofia';
-    this.isSpeaking = false;
-    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.90');
-    this.onEndCallback = null;
-    this.audioElement = null;
-    this.keepAliveTimer = null;
-
-    // Purge legacy robotic Cosimo or Desktop SAPI voices from saved settings
-    const savedName = (localStorage.getItem('studio_magico_voice_name') || '').toLowerCase();
-    if (savedName.includes('cosimo') || (savedName.includes('desktop') && !savedName.includes('natural')) || savedName.includes('sapi')) {
-      localStorage.removeItem('studio_magico_voice_name');
-      this.selectedVoiceId = 'sofia';
-    }
-
-    if (this.synth) {
-      this.loadVoices();
-      if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = () => this.loadVoices();
-      }
-    }
-  }
-
-  getPersonas() {
-    return [
-      {
-        id: 'sofia',
-        name: '🌸 Maestra Sofia (Dolce & Armoniosa ⭐)',
-        description: 'Voce femminile calda, dolce e rilassante',
-        pitch: 1.08,
-        rate: 0.90,
-        preferred: ['isabella', 'elsa', 'alice', 'federica', 'google']
-      },
-      {
-        id: 'giulia',
-        name: '☀️ Maestra Giulia (Solare & Vivace ⭐)',
-        description: 'Voce femminile allegra, chiara ed entusiasta',
-        pitch: 1.15,
-        rate: 0.94,
-        preferred: ['alice', 'elsa', 'federica', 'google']
-      },
-      {
-        id: 'elena',
-        name: '🌙 Maestra Elena (Calma & Chiara ⭐)',
-        description: 'Voce femminile morbida, lenta e scandita',
-        pitch: 1.02,
-        rate: 0.88,
-        preferred: ['elsa', 'isabella', 'alice', 'google']
-      },
-      {
-        id: 'online-hd',
-        name: '🌐 Voce Online Web (Standard)',
-        description: 'Voce online da server',
-        isOnline: true,
-        pitch: 1.05,
-        rate: 0.92
-      }
-    ];
-  }
-
-  loadVoices() {
-    let rawVoices = [];
-    if (this.synth) {
-      rawVoices = this.synth.getVoices() || [];
-    }
-
-    // Filter for Italian voices
-    const italianRaw = rawVoices.filter(v => {
-      const lang = (v.lang || '').replace('_', '-').toLowerCase();
-      return lang.startsWith('it');
-    });
-
-    // Score native voices, strictly prioritizing Italian female neural voices
-    const scoreVoice = (v) => {
-      const name = (v.name || '').toLowerCase();
-      if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi') || name.includes('male') || name.includes('uomo')) {
-        return -1000;
-      }
-      if (name.includes('isabella')) return 1000; // Ultra-melodious Italian female
-      if (name.includes('natural') || name.includes('online')) return 950;
-      if (name.includes('neural')) return 900;
-      if (name.includes('alice') || name.includes('federica')) return 850;
-      if (name.includes('elsa')) return 800;
-      if (name.includes('google')) return 750;
-      if (name.includes('female') || name.includes('donna')) return 700;
-      if (v.localService === false) return 500;
-      return 100;
-    };
-
-    this.nativeVoices = italianRaw.sort((a, b) => scoreVoice(b) - scoreVoice(a));
-
-    const personas = this.getPersonas();
-    const voiceList = [...personas];
-
-    // Add any detected Italian device voices
-    this.nativeVoices.forEach((v) => {
-      const score = scoreVoice(v);
-      if (score > 0) {
-        voiceList.push({
-          id: 'native:' + v.name,
-          name: '🎙️ ' + v.name + (score >= 700 ? ' ⭐' : ''),
-          isOnline: false,
-          rawVoice: v,
-          pitch: 1.08,
-          rate: 0.90
-        });
-      }
-    });
-
-    const found = voiceList.find(v => v.id === this.selectedVoiceId);
-    if (!found) {
-      this.selectedVoiceId = 'sofia';
-    }
-
-    return voiceList;
-  }
-
-  getSelectedVoiceObj() {
-    const list = this.loadVoices();
-    return list.find(v => v.id === this.selectedVoiceId) || list[0];
-  }
-
-  setVoice(voiceId) {
-    this.selectedVoiceId = voiceId;
-    localStorage.setItem('studio_magico_voice_id', voiceId);
-  }
-
-  pickFemaleVoiceForPersona(persona) {
-    if (!this.nativeVoices || this.nativeVoices.length === 0) return null;
-
-    if (persona && persona.preferred) {
-      for (const pref of persona.preferred) {
-        const found = this.nativeVoices.find(v => (v.name || '').toLowerCase().includes(pref));
-        if (found) return found;
-      }
-    }
-
-    // Generic female filter
-    const female = this.nativeVoices.find(v => {
-      const n = (v.name || '').toLowerCase();
-      return n.includes('female') || n.includes('donna') || n.includes('isabella') || n.includes('alice') || n.includes('elsa') || n.includes('google');
-    });
-
-    return female || this.nativeVoices[0];
-  }
-
-  speak(text, onStart, onEnd) {
-    this.stop();
-    if (!text || typeof text !== 'string') return;
-
-    this.isSpeaking = true;
-    this.onEndCallback = onEnd;
-
-    // Clean text: strip markdown symbols, asterisks, bullet dashes
-    const cleanedText = text
-      .replace(/[*#•_~`>-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!cleanedText) {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-      return;
-    }
-
-    const voiceObj = this.getSelectedVoiceObj();
-
-    if (voiceObj && voiceObj.isOnline) {
-      this.speakWithOnlineHd(cleanedText, onStart, onEnd);
-    } else {
-      this.speakWithNativeSpeech(cleanedText, voiceObj, onStart, onEnd);
-    }
-  }
-
-  speakWithOnlineHd(text, onStart, onEnd) {
-    if (onStart) onStart();
-
-    // Natural phrase chunking splitting at commas and sentence endings
-    const rawParts = text.match(/[^,.;!?]+[,.;!?]*/g) || [text];
-    const chunks = [];
-    let current = '';
-
-    for (const part of rawParts) {
-      const p = part.trim();
-      if (!p) continue;
-      if ((current + ' ' + p).trim().length <= 110) {
-        current = (current + ' ' + p).trim();
-      } else {
-        if (current) chunks.push(current);
-        if (p.length <= 110) {
-          current = p;
-        } else {
-          const words = p.split(' ');
-          for (const w of words) {
-            if ((current + ' ' + w).trim().length <= 110) {
-              current = (current + ' ' + w).trim();
-            } else {
-              if (current) chunks.push(current);
-              current = w;
-            }
-          }
-        }
-      }
-    }
-    if (current) chunks.push(current);
-
-    if (chunks.length === 0) {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-      return;
-    }
-
-    let idx = 0;
-    let fallbackCount = 0;
-
-    const playNext = () => {
-      if (!this.isSpeaking || idx >= chunks.length) {
-        this.isSpeaking = false;
-        if (onEnd) onEnd();
-        return;
-      }
-
-      const chunk = chunks[idx++];
-      // Primary: Vercel serverless proxy (/api/tts), Secondary: Direct Google endpoint with no-referrer
-      const primaryUrl = `/api/tts?text=${encodeURIComponent(chunk)}&lang=it`;
-      const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=it&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-
-      const audio = new Audio();
-      audio.referrerPolicy = 'no-referrer';
-      audio.playbackRate = this.speechRate || 0.94;
-      this.audioElement = audio;
-
-      audio.onended = () => {
-        // Natural small pause between phrases (80ms)
-        setTimeout(playNext, 80);
-      };
-
-      const handleFailure = () => {
-        fallbackCount++;
-        if (fallbackCount >= 2) {
-          // Both online methods failed (e.g. offline): Seamless fallback to device synthesis
-          console.warn("Online audio unavailable, switching to native speech");
-          this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
-        } else {
-          // Try fallback direct URL
-          audio.onerror = () => {
-            console.warn("Fallback direct URL failed too, switching to native speech");
-            this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
-          };
-          audio.src = fallbackUrl;
-          audio.play().catch(() => {
-            this.speakWithNativeSpeech(chunks.slice(idx - 1).join(' '), null, null, onEnd);
-          });
-        }
-      };
-
-      audio.onerror = handleFailure;
-      audio.src = primaryUrl;
-      audio.play().catch(() => {
-        handleFailure();
-      });
-    };
-
-    playNext();
-  }
-
-  speakWithNativeSpeech(text, voiceObj, onStart, onEnd) {
-    if (!this.synth) {
-      if (onEnd) onEnd();
-      return;
-    }
-
-    if (onStart) onStart();
-
-    // Split text into airy paragraphs for continuous melodious intonation
-    const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
-    const parts = paragraphs.length > 0 ? paragraphs : [text];
-
-    let pIdx = 0;
-
-    // Chrome keep-alive
-    if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
-    this.keepAliveTimer = setInterval(() => {
-      if (this.synth && this.synth.speaking) {
-        this.synth.pause();
-        this.synth.resume();
-      } else {
-        clearInterval(this.keepAliveTimer);
-      }
-    }, 10000);
-
-    const persona = voiceObj || this.getPersona('sofia');
-    const matchedVoice = voiceObj?.rawVoice || this.pickFemaleVoiceForPersona(persona);
-
-    const speakNextParagraph = () => {
-      if (!this.isSpeaking || pIdx >= parts.length) {
-        this.isSpeaking = false;
-        if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
-        if (onEnd) onEnd();
-        return;
-      }
-
-      const para = parts[pIdx++];
-      const utterance = new SpeechSynthesisUtterance(para);
-      utterance.lang = 'it-IT';
-      // Harmonious feminine pitch and gentle relaxed tempo
-      utterance.pitch = persona.pitch || 1.08;
-      utterance.rate = persona.rate || this.speechRate || 0.90;
-
-      if (matchedVoice) {
-        utterance.voice = matchedVoice;
-      }
-
-      utterance.onend = () => {
-        setTimeout(speakNextParagraph, 160);
-      };
-
-      utterance.onerror = (e) => {
-        console.warn("Native speech error", e);
-        speakNextParagraph();
-      };
-
-      this.synth.speak(utterance);
-    };
-
-    speakNextParagraph();
-  }
-
-  stop() {
-    this.isSpeaking = false;
-    if (this.keepAliveTimer) {
-      clearInterval(this.keepAliveTimer);
-      this.keepAliveTimer = null;
-    }
-    if (this.audioElement) {
-      try {
-        this.audioElement.pause();
-        this.audioElement.currentTime = 0;
-      } catch (e) {}
-      this.audioElement = null;
-    }
-    if (this.synth) {
-      try {
-        this.synth.cancel();
-      } catch (e) {}
-    }
-    if (this.onEndCallback) {
-      const cb = this.onEndCallback;
-      this.onEndCallback = null;
-      cb();
-    }
-  }
-}
-
 // --- Application State & Controller ---
 const App = {
   sound: new SoundEffects(),
-  voice: new VoiceNarrator(),
   currentLesson: null,
   activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz' | 'curiosita'
   uploadedImages: [], // Array of { id, dataUrl, mimeType, base64, name }
@@ -503,15 +142,12 @@ const App = {
     if (streakCount) streakCount.innerText = this.stats.streak;
   },
 
-  setMascotMessage(text, speak = false) {
+  setMascotMessage(text) {
     const msgEl = document.getElementById('mascotMessage');
     if (msgEl) {
       msgEl.innerText = text;
       msgEl.parentElement.classList.add('scale-105');
       setTimeout(() => msgEl.parentElement.classList.remove('scale-105'), 200);
-    }
-    if (speak) {
-      this.voice.speak(text);
     }
   },
 
@@ -553,82 +189,7 @@ const App = {
           modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
         }
 
-        // Populate voice dropdowns
-        this.updateVoiceSelectors();
-
-        // Voice rate slider setup
-        const rateSlider = document.getElementById('voiceRateSlider');
-        const rateVal = document.getElementById('voiceRateVal');
-        if (rateSlider && rateVal) {
-          rateSlider.value = this.voice.speechRate;
-          rateVal.innerText = `${this.voice.speechRate}x`;
-          rateSlider.oninput = (e) => {
-            rateVal.innerText = `${e.target.value}x`;
-          };
-        }
-
         settingsModal.classList.remove('hidden');
-      });
-    }
-
-    // Voice selectors synchronization (Quick voice on story card + Settings modal voice)
-    this.updateVoiceSelectors();
-    if (window.speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = () => this.updateVoiceSelectors();
-    }
-
-    const onVoiceChanged = (voiceId) => {
-      this.voice.setVoice(voiceId);
-      this.updateVoiceSelectors();
-    };
-
-    const quickVoiceSelect = document.getElementById('quickVoiceSelect');
-    if (quickVoiceSelect) {
-      quickVoiceSelect.addEventListener('change', (e) => onVoiceChanged(e.target.value));
-    }
-
-    const previewQuickVoiceBtn = document.getElementById('previewQuickVoiceBtn');
-    if (previewQuickVoiceBtn) {
-      previewQuickVoiceBtn.addEventListener('click', () => {
-        if (this.voice.isSpeaking) {
-          this.voice.stop();
-          previewQuickVoiceBtn.innerHTML = '<span>▶️</span><span class="hidden sm:inline">Prova</span>';
-          return;
-        }
-
-        previewQuickVoiceBtn.innerHTML = '<span>🔊</span><span class="hidden sm:inline">Ascolto...</span>';
-        this.voice.speak(
-          "Ciao! Ti leggerò il racconto con questa voce dolce e armoniosa.",
-          () => {},
-          () => {
-            previewQuickVoiceBtn.innerHTML = '<span>▶️</span><span class="hidden sm:inline">Prova</span>';
-          }
-        );
-      });
-    }
-
-    const voiceSelectInput = document.getElementById('voiceSelectInput');
-    if (voiceSelectInput) {
-      voiceSelectInput.addEventListener('change', (e) => onVoiceChanged(e.target.value));
-    }
-
-    // Test Voice Button in Settings Modal
-    const testVoiceBtn = document.getElementById('testVoiceBtn');
-    if (testVoiceBtn) {
-      testVoiceBtn.addEventListener('click', () => {
-        const rateSlider = document.getElementById('voiceRateSlider');
-        if (rateSlider) {
-          this.voice.speechRate = parseFloat(rateSlider.value);
-        }
-
-        testVoiceBtn.innerHTML = '<span>🔊</span><span>Ascolto...</span>';
-        this.voice.speak(
-          "Ciao! Ti leggerò il racconto con questa voce dolce e armoniosa.",
-          () => {},
-          () => {
-            testVoiceBtn.innerHTML = '<span>▶️</span><span>Prova Voce</span>';
-          }
-        );
       });
     }
 
@@ -648,14 +209,10 @@ const App = {
           localStorage.setItem('gemini_selected_model', modelSelect.value);
         }
 
-        const rateSlider = document.getElementById('voiceRateSlider');
-        if (rateSlider) {
-          localStorage.setItem('studio_magico_voice_rate', rateSlider.value);
-          this.voice.speechRate = parseFloat(rateSlider.value);
-        }
+        
 
         this.sound.success();
-        alert('Impostazioni e voce salvate con successo!');
+        alert('Impostazioni salvate con successo!');
         settingsModal.classList.add('hidden');
       });
     }
@@ -805,32 +362,6 @@ const App = {
       analyzeBtn.addEventListener('click', () => this.analyzeLessonWithAi());
     }
 
-    // Voice narration controls
-    const listenStoryBtn = document.getElementById('listenStoryBtn');
-    if (listenStoryBtn) {
-      listenStoryBtn.addEventListener('click', () => {
-        if (this.voice.isSpeaking) {
-          this.voice.stop();
-          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Racconto</span>';
-        } else if (this.currentLesson) {
-          listenStoryBtn.innerHTML = '<span>⏹️</span><span>Ferma Voce</span>';
-          const content = this.currentLesson.riassunto || this.currentLesson.storia_semplice || '';
-          const cleanSpeech = content
-            .replace(/[*#•_~`>-]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-          this.voice.speak(
-            `${this.currentLesson.titolo}. ${cleanSpeech}`,
-            () => {},
-            () => {
-              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Racconto</span>';
-            }
-          );
-        }
-      });
-    }
-
     // Mark Summary as Read Button
     const markReadBtn = document.getElementById('markReadBtn');
     if (markReadBtn) {
@@ -858,7 +389,6 @@ const App = {
   },
 
   switchTab(tab) {
-    this.voice.stop();
     this.activeTab = tab;
 
     // Update active tab button visuals
@@ -1004,23 +534,6 @@ const App = {
     this.renderQuizQuestion();
   },
 
-  updateVoiceSelectors() {
-    const list = this.voice.loadVoices();
-    const currentId = this.voice.selectedVoiceId;
-
-    const populate = (el) => {
-      if (!el) return;
-      el.innerHTML = list.map(v => `
-        <option value="${v.id}" ${v.id === currentId ? 'selected' : ''}>
-          ${v.name}
-        </option>
-      `).join('');
-    };
-
-    populate(document.getElementById('quickVoiceSelect'));
-    populate(document.getElementById('voiceSelectInput'));
-  },
-
   // --- Flashcard Logic ---
   renderFlashcard() {
     if (!this.currentLesson || !this.currentLesson.parole_chiave) return;
@@ -1043,11 +556,6 @@ const App = {
           <div class="flip-card-back bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
             <span class="text-3xl mb-2 font-heading text-amber-900 font-bold">${card.termine}</span>
             <p class="text-lg md:text-xl text-slate-800 leading-relaxed font-medium px-4">${card.spiegazione}</p>
-            <div class="mt-4 flex gap-2">
-              <button onclick="event.stopPropagation(); App.voice.speak('${card.termine}. ${card.spiegazione.replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold flex items-center gap-1 shadow">
-                🔊 Ascolta
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -1112,9 +620,6 @@ const App = {
           <span class="bg-blue-100 text-blue-800 text-sm font-extrabold px-3 py-1 rounded-full font-heading">
             Domanda ${qIndex + 1} di ${questions.length}
           </span>
-          <button onclick="App.voice.speak('${q.domanda.replace(/'/g, "\\'")}')" class="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-xl">
-            🔊 Leggi domanda
-          </button>
         </div>
 
         <h3 class="text-xl md:text-2xl font-bold text-slate-800 mb-6 font-heading leading-snug">
