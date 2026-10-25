@@ -277,5 +277,20 @@ Infine, **il cartografo** disegna le mappe e **il geologo** studia le rocce per 
   assert(formattedNarrative.includes('<p>Infine,'), 'Third paragraph missing');
   console.log('✓ Continuous flowing narrative formatter passed');
 
+  // Test I: Speech Synthesis Sentence Chunker & Natural Cadence
+  function splitTextForSpeech(text) {
+    const cleaned = text.replace(/[*#•_~`>-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const sentences = cleaned.match(/[^.!?:]+[.!?:]+/g) || [cleaned];
+    return sentences.map(s => s.trim()).filter(Boolean);
+  }
+
+  const sampleSpeechText = "La geografia è bellissima! Il **geografo** studia la Terra. Chi lo aiuta? Molti scienziati.";
+  const chunks = splitTextForSpeech(sampleSpeechText);
+  assert(chunks.length === 4, `Expected 4 sentence chunks, got ${chunks.length}`);
+  assert(chunks[0] === "La geografia è bellissima!", "Sentence 1 mismatch");
+  assert(chunks[1] === "Il geografo studia la Terra.", "Sentence 2 mismatch or bold tag not stripped");
+  assert(!chunks[1].includes('*'), "Markdown asterisk remained in speech chunk");
+  console.log('✓ Natural sentence chunker & speech prosody cleaner passed');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

@@ -74,8 +74,10 @@ class SoundEffects {
 class VoiceNarrator {
   constructor() {
     this.synth = window.speechSynthesis || null;
+    this.voices = [];
+    this.selectedVoice = null;
     this.isSpeaking = false;
-    this.italianVoice = null;
+    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.98');
     this.onEndCallback = null;
 
     if (this.synth) {
@@ -87,11 +89,37 @@ class VoiceNarrator {
   }
 
   loadVoices() {
-    if (!this.synth) return;
-    const voices = this.synth.getVoices();
-    // Prefer clear Italian voices (Google italiano, Alice, Cosimo, Elsa, Federica, etc.)
-    this.italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Alice'))) ||
-                        voices.find(v => v.lang.startsWith('it')) || null;
+    if (!this.synth) return [];
+    const rawVoices = this.synth.getVoices();
+    // Normalize language codes (handles it_IT, it-IT)
+    this.voices = rawVoices.filter(v => {
+      const lang = (v.lang || '').replace('_', '-').toLowerCase();
+      return lang.startsWith('it');
+    });
+
+    // Score voices by quality (Natural/Neural/Online/Network > Enhanced/Google > local)
+    const scoreVoice = (v) => {
+      const name = (v.name || '').toLowerCase();
+      if (name.includes('natural') || name.includes('online')) return 100;
+      if (name.includes('neural')) return 95;
+      if (name.includes('enhanced') || name.includes('premium')) return 90;
+      if (name.includes('network')) return 85; // Android Google Cloud voice
+      if (name.includes('google')) return 70;
+      if (name.includes('alice') || name.includes('federica') || name.includes('elsa') || name.includes('isabella') || name.includes('cosimo')) return 65;
+      if (name.includes('local')) return 10; // low score for robotic offline engines
+      return 50;
+    };
+
+    this.voices.sort((a, b) => scoreVoice(b) - scoreVoice(a));
+
+    const savedVoiceName = localStorage.getItem('studio_magico_voice_name');
+    if (savedVoiceName) {
+      this.selectedVoice = this.voices.find(v => v.name === savedVoiceName) || this.voices[0] || null;
+    } else {
+      this.selectedVoice = this.voices[0] || null;
+    }
+
+    return this.voices;
   }
 
   speak(text, onStart, onEnd) {
@@ -101,39 +129,74 @@ class VoiceNarrator {
     }
 
     this.stop();
+    if (!text || typeof text !== 'string') return;
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'it-IT';
-    utterance.rate = 0.92; // Slightly slower, very clear for 3rd grade
-    utterance.pitch = 1.05; // Friendly and cheerful
-    if (this.italianVoice) {
-      utterance.voice = this.italianVoice;
-    }
+    this.onEndCallback = onEnd;
 
-    utterance.onstart = () => {
-      this.isSpeaking = true;
-      if (onStart) onStart();
+    // Clean text: strip markdown symbols, asterisks, bullet dashes
+    const cleanedText = text
+      .replace(/[*#•_~`>-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Split text into natural sentences at punctuation (. ! ? :)
+    // This gives proper human intonation curves and natural breath pauses!
+    const rawSentences = cleanedText.match(/[^.!?:]+[.!?:]+/g);
+    const sentences = (rawSentences && rawSentences.length > 0) ? rawSentences : [cleanedText];
+
+    this.isSpeaking = true;
+    if (onStart) onStart();
+
+    let index = 0;
+    const speakNext = () => {
+      if (!this.isSpeaking || index >= sentences.length) {
+        this.isSpeaking = false;
+        if (onEnd) onEnd();
+        return;
+      }
+
+      const sentenceText = sentences[index].trim();
+      index++;
+      if (!sentenceText) {
+        speakNext();
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(sentenceText);
+      utterance.lang = 'it-IT';
+      utterance.rate = this.speechRate;
+      // Strictly 1.0 pitch: zero synthetic frequency warping or chipmunk artifacts
+      utterance.pitch = 1.0;
+
+      if (this.selectedVoice) {
+        utterance.voice = this.selectedVoice;
+      }
+
+      utterance.onend = () => {
+        // Natural human breath pause between sentences (120ms)
+        setTimeout(speakNext, 120);
+      };
+
+      utterance.onerror = (e) => {
+        console.warn("Speech error on sentence", e);
+        speakNext();
+      };
+
+      this.synth.speak(utterance);
     };
 
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    };
-
-    utterance.onerror = (e) => {
-      console.warn("Speech synthesis error", e);
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    };
-
-    this.synth.speak(utterance);
+    speakNext();
   }
 
   stop() {
-    if (this.synth && this.synth.speaking) {
+    this.isSpeaking = false;
+    if (this.synth) {
       this.synth.cancel();
-      this.isSpeaking = false;
-      if (this.onEndCallback) this.onEndCallback();
+      if (this.onEndCallback) {
+        const cb = this.onEndCallback;
+        this.onEndCallback = null;
+        cb();
+      }
     }
   }
 }
@@ -260,7 +323,61 @@ const App = {
         if (modelSelect) {
           modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
         }
+
+        // Populate voice dropdown with quality scoring
+        const voiceSelect = document.getElementById('voiceSelectInput');
+        if (voiceSelect) {
+          const italianVoices = this.voice.loadVoices();
+          if (italianVoices.length === 0) {
+            voiceSelect.innerHTML = '<option value="">Voce italiana predefinita</option>';
+          } else {
+            voiceSelect.innerHTML = italianVoices.map(v => {
+              const isSelected = this.voice.selectedVoice && this.voice.selectedVoice.name === v.name;
+              const nameLower = v.name.toLowerCase();
+              const isNatural = nameLower.includes('natural') || nameLower.includes('online') || nameLower.includes('neural') || nameLower.includes('enhanced') || nameLower.includes('network');
+              return `<option value="${v.name}" ${isSelected ? 'selected' : ''}>
+                ${v.name} ${isNatural ? '⭐ (Alta Qualità)' : ''}
+              </option>`;
+            }).join('');
+          }
+        }
+
+        // Voice rate slider setup
+        const rateSlider = document.getElementById('voiceRateSlider');
+        const rateVal = document.getElementById('voiceRateVal');
+        if (rateSlider && rateVal) {
+          rateSlider.value = this.voice.speechRate;
+          rateVal.innerText = `${this.voice.speechRate}x`;
+          rateSlider.oninput = (e) => {
+            rateVal.innerText = `${e.target.value}x`;
+          };
+        }
+
         settingsModal.classList.remove('hidden');
+      });
+    }
+
+    // Test Voice Button
+    const testVoiceBtn = document.getElementById('testVoiceBtn');
+    if (testVoiceBtn) {
+      testVoiceBtn.addEventListener('click', () => {
+        const voiceSelect = document.getElementById('voiceSelectInput');
+        if (voiceSelect && voiceSelect.value) {
+          this.voice.selectedVoice = this.voice.voices.find(v => v.name === voiceSelect.value) || this.voice.selectedVoice;
+        }
+        const rateSlider = document.getElementById('voiceRateSlider');
+        if (rateSlider) {
+          this.voice.speechRate = parseFloat(rateSlider.value);
+        }
+
+        testVoiceBtn.innerHTML = '<span>🔊</span><span>Ascolto...</span>';
+        this.voice.speak(
+          "Ciao! Leggerò la spiegazione del libro in modo chiaro, naturale e tranquillo.",
+          () => {},
+          () => {
+            testVoiceBtn.innerHTML = '<span>▶️</span><span>Prova Voce</span>';
+          }
+        );
       });
     }
 
@@ -279,8 +396,21 @@ const App = {
         if (modelSelect) {
           localStorage.setItem('gemini_selected_model', modelSelect.value);
         }
+
+        // Save selected voice and rate
+        const voiceSelect = document.getElementById('voiceSelectInput');
+        if (voiceSelect && voiceSelect.value) {
+          localStorage.setItem('studio_magico_voice_name', voiceSelect.value);
+          this.voice.selectedVoice = this.voice.voices.find(v => v.name === voiceSelect.value) || this.voice.selectedVoice;
+        }
+        const rateSlider = document.getElementById('voiceRateSlider');
+        if (rateSlider) {
+          localStorage.setItem('studio_magico_voice_rate', rateSlider.value);
+          this.voice.speechRate = parseFloat(rateSlider.value);
+        }
+
         this.sound.success();
-        alert('Impostazioni salvate con successo! Ora puoi analizzare le pagine del libro!');
+        alert('Impostazioni e voce salvate con successo!');
         settingsModal.classList.add('hidden');
       });
     }
