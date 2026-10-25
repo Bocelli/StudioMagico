@@ -4,6 +4,7 @@
   "description": "App di studio intelligente e giocosa per bambini della scuola primaria con IA gratuita (Gemini)",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'Build OK'",
     "start": "node server.js",
     "test": "node test.js"
   },

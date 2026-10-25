@@ -1108,7 +1108,12 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      const modelName = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+      // Target gemini-3.8-flash (sanitize any legacy 2.5 entries in localStorage)
+      let modelName = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+      if (modelName.includes('2.5')) {
+        modelName = 'gemini-3.8-flash';
+        localStorage.setItem('gemini_selected_model', 'gemini-3.8-flash');
+      }
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
       // 120 seconds timeout so Gemini has plenty of time for 2+ textbook pages
