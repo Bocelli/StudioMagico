@@ -377,6 +377,17 @@
           <input type="password" id="apiKeyInput" placeholder="Incolla qui la chiave (es: AIzaSy...)" class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 font-mono text-sm">
         </div>
 
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Modello Gemini IA:
+          </label>
+          <select id="modelSelectInput" class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 text-sm font-semibold bg-white text-slate-800">
+            <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash (Raccomandato & Gratuito)</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+          </select>
+        </div>
+
         <button id="saveApiKeyBtn" class="btn-tactile btn-blue w-full py-3 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow">
           <span>💾</span>
           <span>Salva Chiave API</span>

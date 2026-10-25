@@ -256,6 +256,10 @@ const App = {
         if (apiKeyInput) {
           apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
         }
+        const modelSelect = document.getElementById('modelSelectInput');
+        if (modelSelect) {
+          modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+        }
         settingsModal.classList.remove('hidden');
       });
     }
@@ -271,8 +275,12 @@ const App = {
       saveApiKeyBtn.addEventListener('click', () => {
         const val = apiKeyInput.value.trim();
         localStorage.setItem('gemini_api_key', val);
+        const modelSelect = document.getElementById('modelSelectInput');
+        if (modelSelect) {
+          localStorage.setItem('gemini_selected_model', modelSelect.value);
+        }
         this.sound.success();
-        alert('Chiave API salvata con successo! Ora puoi analizzare qualsiasi pagina del libro!');
+        alert('Impostazioni salvate con successo! Ora puoi analizzare le pagine del libro!');
         settingsModal.classList.add('hidden');
       });
     }
@@ -1012,28 +1020,54 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      // We call Gemini 2.5 Flash (or 1.5 Flash fallback)
-      const modelName = 'gemini-2.5-flash';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      // User preferred model or default to gemini-3.8-flash (with automatic fallbacks)
+      const preferredModel = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+      const modelsToTry = [preferredModel, 'gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((m, i, a) => a.indexOf(m) === i);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: parts }],
-          generationConfig: {
-            response_mime_type: "application/json",
-            temperature: 0.3
+      let data = null;
+      let lastErrorMessage = '';
+
+      for (const modelName of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: parts }],
+              generationConfig: {
+                response_mime_type: "application/json",
+                temperature: 0.3
+              }
+            })
+          });
+
+          if (response.ok) {
+            data = await response.json();
+            localStorage.setItem('gemini_selected_model', modelName);
+            break; // Success!
+          } else {
+            const errData = await response.json().catch(() => ({}));
+            lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
+            console.warn(`Tentativo con modello ${modelName} fallito:`, lastErrorMessage);
+            // If the model is not found or no longer available, continue to next fallback
+            if (lastErrorMessage.includes('not found') || lastErrorMessage.includes('no longer available') || lastErrorMessage.includes('not supported')) {
+              continue;
+            } else {
+              throw new Error(lastErrorMessage);
+            }
           }
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `Errore API Gemini (${response.status})`);
+        } catch (callErr) {
+          if (callErr.message && (callErr.message.includes('not found') || callErr.message.includes('no longer available') || callErr.message.includes('not supported'))) {
+            continue;
+          }
+          throw callErr;
+        }
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw new Error(lastErrorMessage || "Nessun modello Gemini ha risposto correttamente.");
+      }
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) throw new Error("La risposta dell'IA era vuota. Riprova con una foto più nitida.");
 
