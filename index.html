@@ -333,7 +333,15 @@
         <p id="aiLoadingText" class="font-bold text-indigo-950 font-heading text-base">
           Leo sta leggendo le pagine del tuo libro... 📖
         </p>
-        <p class="text-xs text-indigo-600 mt-1 font-semibold">Ci vogliono circa 5-10 secondi</p>
+        <div class="flex items-center justify-center gap-2 mt-1">
+          <span id="aiLoadingTimer" class="text-xs font-mono font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+            0s
+          </span>
+          <span class="text-xs text-indigo-500 font-semibold">Elaborazione con IA in corso...</span>
+        </div>
+        <button type="button" id="cancelAiBtn" class="mt-3 text-xs font-bold text-red-500 hover:text-red-700 underline block mx-auto">
+          ✕ Annulla operazione
+        </button>
       </div>
 
       <!-- Action Button -->
@@ -447,7 +455,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js"></script>
-  <script src="app.js"></script>
+  <script src="demo-data.js?v=2"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

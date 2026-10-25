@@ -308,40 +308,66 @@ const App = {
     // Multi-Image Handlers with Automatic Canvas Compression (Ponytail: max 1280px, ~150KB per page)
     // shortcut: client-side 2D canvas resize, upgrade to Web Workers only if processing >20 pages
     const compressAndAddImage = (file) => {
-      if (!file || !file.type.startsWith('image/')) return;
+      if (!file) return;
+      const isImg = (file.type && file.type.startsWith('image/')) || (file.name && file.name.match(/\.(jpe?g|png|webp|heic|bmp)$/i));
+      if (!isImg) return;
+
       const reader = new FileReader();
       reader.onload = (e) => {
+        const rawResult = e.target.result;
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const maxDim = 1280;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
+          try {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+            const maxDim = 1280;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
             }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
+            this.uploadedImages.push({
+              id: 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+              dataUrl: dataUrl,
+              mimeType: 'image/jpeg',
+              base64: dataUrl.split(',')[1],
+              name: file.name
+            });
+            this.renderUploadedPagesPreview();
+            this.sound.pop();
+          } catch (canvasErr) {
+            this.uploadedImages.push({
+              id: 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+              dataUrl: rawResult,
+              mimeType: file.type || 'image/jpeg',
+              base64: rawResult.split(',')[1],
+              name: file.name
+            });
+            this.renderUploadedPagesPreview();
+            this.sound.pop();
           }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-          const base64 = dataUrl.split(',')[1];
+        };
+        img.onerror = () => {
           this.uploadedImages.push({
             id: 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-            dataUrl: dataUrl,
-            mimeType: 'image/jpeg',
-            base64: base64,
+            dataUrl: rawResult,
+            mimeType: file.type || 'image/jpeg',
+            base64: rawResult.split(',')[1],
             name: file.name
           });
           this.renderUploadedPagesPreview();
           this.sound.pop();
         };
-        img.src = e.target.result;
+        img.src = rawResult;
       };
       reader.readAsDataURL(file);
     };
@@ -964,6 +990,8 @@ const App = {
     const analyzeBtn = document.getElementById('analyzeBtn');
     const loadingState = document.getElementById('aiLoadingState');
     const loadingText = document.getElementById('aiLoadingText');
+    const loadingTimer = document.getElementById('aiLoadingTimer');
+    const cancelBtn = document.getElementById('cancelAiBtn');
     const uploadModal = document.getElementById('uploadModal');
     const manualTextInput = document.getElementById('manualTextInput');
 
@@ -979,9 +1007,25 @@ const App = {
     }
 
     let interval = null;
+    let timerInterval = null;
+    const abortController = new AbortController();
+
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        abortController.abort();
+      };
+    }
+
     try {
       if (analyzeBtn) analyzeBtn.disabled = true;
       if (loadingState) loadingState.classList.remove('hidden');
+
+      let elapsedSeconds = 0;
+      if (loadingTimer) loadingTimer.innerText = '0s';
+      timerInterval = setInterval(() => {
+        elapsedSeconds++;
+        if (loadingTimer) loadingTimer.innerText = `${elapsedSeconds}s`;
+      }, 1000);
 
       const loadingSteps = [
         `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
@@ -996,34 +1040,55 @@ const App = {
       }, 2500);
 
       const promptText = `
-Sei "Leo", il compagno di studio più empatico, chiaro e simpatico per bambini di 3ª elementare (8-9 anni).
-Il bambino fa fatica con il noioso "leggi e ripeti". 
-${this.uploadedImages.length > 1 ? `Ci sono ${this.uploadedImages.length} pagine del libro caricate in sequenza relative allo stesso argomento. Analizzale insieme come un'unica lezione coerente e completa.` : 'Analizza la pagina del libro fornita.'}
-
+Sei "Leo", il tutor di studio per bambini di 3ª elementare (8-9 anni).
+Dalle pagine caricate, crea una spiegazione chiara e coinvolgente.
+Sii sintetico, chiaro, usa frasi brevi con metafore semplici.
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
   "titolo": "Titolo accattivante della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "storia_semplice": "Un racconto scorrevole e chiaro in 3-4 paragrafi che spiega tutta la lezione come un'avventura, usando paragoni di vita quotidiana per un bambino di 8 anni. Frasi semplici e parole comprensibili.",
+  "storia_semplice": "Un racconto scorrevole di 3-4 brevi paragrafi che spiega la lezione come un'avventura.",
   "parole_chiave": [
     {
-      "termine": "Concetto Chiave",
-      "emoji": "Icona adatta (es: 🌋)",
-      "spiegazione": "Definizione in 1-2 frasi chiare ed essenziali."
+      "termine": "Concetto 1",
+      "emoji": "Icona",
+      "spiegazione": "Definizione semplice in 1 o 2 frasi."
+    },
+    {
+      "termine": "Concetto 2",
+      "emoji": "Icona",
+      "spiegazione": "Definizione semplice in 1 o 2 frasi."
+    },
+    {
+      "termine": "Concetto 3",
+      "emoji": "Icona",
+      "spiegazione": "Definizione semplice in 1 o 2 frasi."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda chiara sul concetto?",
+      "domanda": "Domanda chiara?",
       "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
       "risposta_corretta": 0,
-      "indizio": "Un indizio magico per aiutare il bambino se sbaglia senza farlo sentire a disagio."
+      "indizio": "Un aiutino amichevole per chi sbaglia."
+    },
+    {
+      "domanda": "Seconda domanda?",
+      "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
+      "risposta_corretta": 1,
+      "indizio": "Un aiutino amichevole."
+    },
+    {
+      "domanda": "Terza domanda?",
+      "opzioni": ["Opzione A", "Opzione B", "Opzione C"],
+      "risposta_corretta": 2,
+      "indizio": "Un aiutino amichevole."
     }
   ],
   "curiosita": [
     "Un fatto sorprendente per dire 'Wow!' sulla lezione."
   ],
-  "sfida_veloce": "Una mini sfida pratica o da mimare col corpo per ricordare il concetto."
+  "sfida_veloce": "Una mini sfida da mimare o fare in 30 secondi."
 }
 `;
 
@@ -1043,80 +1108,38 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      // User preferred model or default to gemini-3.8-flash (with automatic fallbacks)
-      const preferredModel = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
-      const modelsToTry = [preferredModel, 'gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((m, i, a) => a.indexOf(m) === i);
+      const modelName = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-      let data = null;
-      let lastErrorMessage = '';
+      // Max 45 seconds timeout so it never hangs
+      const timeoutId = setTimeout(() => abortController.abort(), 45000);
 
-      for (const modelName of modelsToTry) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-          
-          // 40s abort timeout to guarantee it never hangs indefinitely
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 40000);
-
-          const genConfig = {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: parts
+          }],
+          generationConfig: {
             responseMimeType: "application/json",
             temperature: 0.2
-          };
-
-          // Gemini 3.8 Flash supports fast reasoning via low thinking level
-          if (modelName.includes('3.8')) {
-            genConfig.thinkingConfig = { thinkingLevel: "low" };
           }
+        })
+      });
 
-          const response = await fetch(url, {
-            method: 'POST',
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                role: "user",
-                parts: parts
-              }],
-              generationConfig: genConfig
-            })
-          });
+      clearTimeout(timeoutId);
 
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            data = await response.json();
-            localStorage.setItem('gemini_selected_model', modelName);
-            break; // Success!
-          } else {
-            const errData = await response.json().catch(() => ({}));
-            lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
-            console.warn(`Tentativo con modello ${modelName} fallito:`, lastErrorMessage);
-            // If the model is not found or no longer available, continue to next fallback
-            if (lastErrorMessage.includes('not found') || lastErrorMessage.includes('no longer available') || lastErrorMessage.includes('not supported')) {
-              continue;
-            } else {
-              throw new Error(lastErrorMessage);
-            }
-          }
-        } catch (callErr) {
-          if (callErr.name === 'AbortError') {
-            console.warn(`Timeout su modello ${modelName}, provo il successivo...`);
-            lastErrorMessage = "La richiesta ha impiegato troppo tempo (timeout di rete).";
-            continue;
-          }
-          if (callErr.message && (callErr.message.includes('not found') || callErr.message.includes('no longer available') || callErr.message.includes('not supported'))) {
-            continue;
-          }
-          throw callErr;
-        }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Errore HTTP ${response.status}`);
       }
 
-      if (!data) {
-        throw new Error(lastErrorMessage || "Nessun modello Gemini ha risposto correttamente.");
-      }
-
+      const data = await response.json();
       const candParts = data.candidates?.[0]?.content?.parts || [];
-      // In Gemini 3.8 Flash, filter out thinking blocks to retrieve the final JSON
+      // In Gemini 3.8 Flash, pick the non-thought part that contains the final JSON
       const textPart = candParts.slice().reverse().find(p => p.text && !p.thought) || candParts[0];
       const rawText = textPart?.text;
       if (!rawText) throw new Error("La risposta dell'IA era vuota. Riprova con una foto più nitida.");
@@ -1152,10 +1175,15 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 
     } catch (err) {
       this.sound.hint();
-      console.error(err);
-      alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
+      if (err.name === 'AbortError') {
+        alert("Elaborazione interrotta (timeout o annullata). Riprova!");
+      } else {
+        console.error(err);
+        alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
+      }
     } finally {
       if (interval) clearInterval(interval);
+      if (timerInterval) clearInterval(timerInterval);
       if (loadingState) loadingState.classList.add('hidden');
       if (analyzeBtn) analyzeBtn.disabled = false;
     }
