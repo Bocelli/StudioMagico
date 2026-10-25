@@ -436,21 +436,26 @@ const App = {
       listenStoryBtn.addEventListener('click', () => {
         if (this.voice.isSpeaking) {
           this.voice.stop();
-          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta con Leo</span>';
+          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Riassunto</span>';
         } else if (this.currentLesson) {
           listenStoryBtn.innerHTML = '<span>⏹️</span><span>Ferma Voce</span>';
+          const content = this.currentLesson.riassunto || this.currentLesson.storia_semplice || '';
+          const cleanSpeech = content
+            .replace(/[*#•_~`>-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
           this.voice.speak(
-            `${this.currentLesson.titolo}. ${this.currentLesson.storia_semplice}`,
+            `${this.currentLesson.titolo}. ${cleanSpeech}`,
             () => {},
             () => {
-              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta con Leo</span>';
+              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Riassunto</span>';
             }
           );
         }
       });
     }
 
-    // Mark Story as Read Button
+    // Mark Summary as Read Button
     const markReadBtn = document.getElementById('markReadBtn');
     if (markReadBtn) {
       markReadBtn.addEventListener('click', () => {
@@ -458,7 +463,7 @@ const App = {
         if (!this.stats.readLessons.includes(this.currentLesson.id)) {
           this.stats.readLessons.push(this.currentLesson.id);
           this.addStars(20, 'storia_letta');
-          markReadBtn.innerHTML = '<span>✅</span><span>Completata! (+20 ⭐)</span>';
+          markReadBtn.innerHTML = '<span>✅</span><span>Completato! (+20 ⭐)</span>';
           markReadBtn.disabled = true;
           markReadBtn.classList.add('opacity-75', 'cursor-not-allowed');
         }
@@ -504,9 +509,9 @@ const App = {
       }
     });
 
-    // Mascot context reactions
+    // Context reactions
     if (tab === 'storia') {
-      this.setMascotMessage("Ecco la storia della lezione! Puoi leggerla o cliccare 'Ascolta' per farla leggere a me! 📖");
+      this.setMascotMessage("Ecco il riassunto strutturato della lezione! Puoi leggerlo o cliccare 'Ascolta' per farlo leggere a voce alta! 📖");
     } else if (tab === 'flashcard') {
       this.setMascotMessage("Tocca le carte per girarle e scoprire i trucchi delle parole chiave! 🗂️");
       this.renderFlashcard();
@@ -514,6 +519,67 @@ const App = {
       this.setMascotMessage("Pronto per la sfida a quiz? Guadagna tantissime stelline rispondendo alle domande! 🎯");
       this.renderQuizQuestion();
     }
+  },
+
+  formatSummary(text) {
+    if (!text || typeof text !== 'string') return '';
+    const blocks = text.split(/\n\n+/);
+    return blocks.map(block => {
+      let trimmed = block.trim();
+      if (!trimmed) return '';
+
+      const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+      const isList = lines.some(l => /^[-*•]\s+/.test(l));
+
+      if (isList) {
+        const headerLines = [];
+        const listLines = [];
+        lines.forEach(l => {
+          if (/^[-*•]\s+/.test(l)) {
+            listLines.push(l);
+          } else {
+            headerLines.push(l);
+          }
+        });
+
+        let headerHtml = '';
+        if (headerLines.length > 0) {
+          const hText = headerLines.join(' ').replace(/^###\s*/, '').replace(/^##\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-extrabold">$1</strong>');
+          headerHtml = `<div class="flex items-center gap-2 mt-5 mb-2.5 pt-2 text-indigo-950 font-heading font-extrabold text-xl md:text-2xl border-b-2 border-indigo-100 pb-1.5">${hText}</div>`;
+        }
+
+        const listItemsHtml = listLines.map(line => {
+          let itemText = line.replace(/^[-*•]\s+/, '').trim();
+          if (!itemText) return '';
+          itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1 py-0.5 rounded">$1</strong>');
+          return `
+            <li class="flex items-start gap-3 text-slate-700 text-lg md:text-xl font-medium leading-relaxed my-2">
+              <span class="text-blue-600 font-extrabold text-2xl leading-none select-none mt-0.5">•</span>
+              <span class="flex-1">${itemText}</span>
+            </li>
+          `;
+        }).join('');
+
+        return `${headerHtml}<ul class="bg-blue-50/60 border-2 border-blue-100 rounded-2xl p-4 sm:p-5 my-3 space-y-1 list-none shadow-sm">${listItemsHtml}</ul>`;
+      }
+
+      // Check if first line is a section header (e.g. starts with ### or emoji icons like 📌, 🔍, 💡, 👉, ⭐)
+      if (/^(###|##|📌|🔍|💡|👉|⭐)/.test(lines[0])) {
+        const headerLine = lines[0].replace(/^###\s*/, '').replace(/^##\s*/, '');
+        const formattedHeader = headerLine.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-extrabold">$1</strong>');
+        const headerHtml = `<div class="flex items-center gap-2 mt-5 mb-2.5 pt-2 text-indigo-950 font-heading font-extrabold text-xl md:text-2xl border-b-2 border-indigo-100 pb-1.5">${formattedHeader}</div>`;
+
+        if (lines.length > 1) {
+          const bodyText = lines.slice(1).join(' ').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold">$1</strong>');
+          return `${headerHtml}<p class="leading-relaxed text-slate-700 text-lg md:text-xl font-medium mb-4">${bodyText}</p>`;
+        }
+        return headerHtml;
+      }
+
+      // Normal paragraph
+      const formatted = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold">$1</strong>');
+      return `<p class="leading-relaxed text-slate-700 text-lg md:text-xl font-medium mb-4">${formatted}</p>`;
+    }).join('');
   },
 
   loadLesson(lesson) {
@@ -536,13 +602,11 @@ const App = {
          'bg-purple-100 text-purple-800');
     }
 
-    // Render Story
+    // Render Structured Summary
     const storyEl = document.getElementById('storyContent');
     if (storyEl) {
-      const paragraphs = lesson.storia_semplice.split('\n\n');
-      storyEl.innerHTML = paragraphs.map(p => `
-        <p class="leading-relaxed text-slate-700 text-lg md:text-xl font-medium mb-4">${p.trim()}</p>
-      `).join('');
+      const content = lesson.riassunto || lesson.storia_semplice || '';
+      storyEl.innerHTML = this.formatSummary(content);
     }
 
     // Reset Read button
@@ -551,10 +615,10 @@ const App = {
       const isRead = this.stats.readLessons.includes(lesson.id);
       markReadBtn.disabled = isRead;
       if (isRead) {
-        markReadBtn.innerHTML = '<span>✅</span><span>Completata! (+20 ⭐)</span>';
+        markReadBtn.innerHTML = '<span>✅</span><span>Completato! (+20 ⭐)</span>';
         markReadBtn.classList.add('opacity-75', 'cursor-not-allowed');
       } else {
-        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto la storia! (+20 ⭐)</span>';
+        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto il riassunto! (+20 ⭐)</span>';
         markReadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
       }
     }
@@ -980,10 +1044,10 @@ const App = {
       }, 1000);
 
       const loadingSteps = [
-        `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
-        "Estraendo le idee più importanti e le parole magiche... ✨",
-        "Scrivendo la storia divertente per la 3ª elementare... ✏️",
-        "Creando il Super Quiz con aiutini amichevoli... 🎯 (ancora qualche istante!)"
+        `Lettura in corso delle ${this.uploadedImages.length > 1 ? this.uploadedImages.length + ' pagine' : 'pagine'} del libro... 📖`,
+        "Estrazione dei concetti e creazione del riassunto strutturato... ✏️",
+        "Generazione delle flashcard didattiche... 🗂️",
+        "Creazione del Super Quiz per la verifica... 🎯 (ancora pochi istanti!)"
       ];
       let stepIdx = 0;
       interval = setInterval(() => {
@@ -996,38 +1060,48 @@ const App = {
       const targetCount = totalPages > 1 ? Math.min(10, Math.max(7, totalPages * 4)) : 5;
 
       const promptText = `
-Sei "Leo", il magico tutor di studio per bambini di 3ª elementare (8-9 anni).
-Il tuo compito è spiegare le pagine del libro scolastico in modo chiaro, avventuroso ed entusiasmante, preparando una ricca serie di flashcard e quiz per far fare tanta pratica al bambino.
+Sei un docente esperto nella didattica per la scuola primaria (3ª elementare, bambini di 8-9 anni).
+Il tuo compito è creare un RIASSUNTO COMPLETO, STRUTTURATO E CHIARO delle pagine caricate, insieme a una serie ricca di flashcard e quiz per lo studio autonomo del bambino.
 
-REGOLE FONDAMENTALI SULLE PAGINE:${totalPages > 1 ? `
-- ATTENZIONE CRUCIALE: Sono state caricate ${totalPages} PAGINE CONSECUTIVE del libro (contrassegnate come PAGINA 1, PAGINA 2, ecc.).
-- DEVI SINTETIZZARE ED INCLUDERE OBBLIGATORIAMENTE TUTTE LE ${totalPages} PAGINE! Non fermarti alla prima pagina.
-- La "storia_semplice" DEVE spiegare gli argomenti di TUTTE le pagine in ordine cronologico e logico (dedica 1-2 paragrafi per ciascuna pagina caricata). Unisci il tutto in un'unica storia avvincente.
-- Le "parole_chiave" (flashcard) DEVONO essere ${targetCount} concetti chiave distribuiti tra tutte le pagine caricate (almeno 3-4 per ciascuna pagina).
-- Il "quiz" DEVE avere ${targetCount} domande a risposta multipla che verifichino la comprensione di TUTTE le pagine (distribuisci le domande equamente tra tutte le pagine).` : `
-- Spiega in modo chiaro e completo il contenuto della pagina caricata.
-- "storia_semplice" in 3-4 paragrafi con linguaggio semplice e metafore quotidiane adatte a 8 anni.
-- Le "parole_chiave" (flashcard) DEVONO essere ${targetCount} concetti chiave importanti con emoji simpatica e spiegazione adatta a 8 anni.
-- Il "quiz" DEVE avere ${targetCount} domande a risposta multipla con 3 opzioni e un aiutino giocoso per chi sbaglia.`}
+REGOLE FONDAMENTALI SULLO STILE (DIVIETO ASSOLUTO DI STORYTELLING INFANTILE O ROLEPLAY):
+- NON usare formule da fiaba o da cartone animato: NIENTE "C'era una volta", NIENTE "Ciao esploratore", NIENTE "Sono Leo il tuo tutor magico", NIENTE "Oggi ti porto in un viaggio fantastico".
+- NON inserire commenti metanarrativi tipo "Ma l'avventura continua nella pagina successiva" o "Insieme formano una super squadra magica".
+- SCRIVI CON UNO STILE DIDATTICO, CHIARO, DIRETTO E COMPLETO in terza persona: spiega subito e con precisione i fatti, i concetti e le definizioni del testo, con frasi scorrevoli e lessico semplice adatto a un bambino di 8 anni.
+
+STRUTTURA OBBLIGATORIA DEL RIASSUNTO (campo "riassunto"):
+Il riassunto DEVE spiegare TUTTO il contenuto delle pagine caricate (non tralasciare definizioni, mestieri, fasi o scoperte) ed essere organizzato in 3 parti distinte usando doppi a capo (\\n\\n):
+1. 📌 INTRODUZIONE: 2-3 frasi chiare che presentano subito il tema centrale della lezione.
+2. 🔍 I PUNTI PRINCIPALI: un elenco puntato dettagliato (usando trattini - all'inizio di ogni riga) in cui ogni concetto o figura chiave viene spiegato con parole semplici ed evidenziato in **grassetto**.
+   Esempio:
+   - **Il fotografo**: scatta foto agli ambienti per documentare i cambiamenti nel tempo.
+   - **Il cartografo**: disegna le carte geografiche usando mappe e satelliti.
+   - **Il geologo**: studia le rocce e il suolo e aiuta a prevenire frane e pericoli.
+3. 💡 IN SINTESI: 2-3 frasi conclusive che riassumono l'importanza di quanto studiato.
+
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine consecutive. Il riassunto, le ${targetCount} flashcard e i ${targetCount} quiz DEVONO coprire ed estrarre concetti da TUTTE le ${totalPages} pagine caricate, dedicando attenzione a ogni argomento!` : ''}
+
+REQUISITI PER FLASHCARD E QUIZ:
+- "parole_chiave": ${targetCount} flashcard con termine, emoji adatta e spiegazione semplice in 1 o 2 frasi.
+- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un utile indizio per chi sbaglia.
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
-  "titolo": "Titolo accattivante dell'argomento",
+  "titolo": "Titolo chiaro e corretto della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "storia_semplice": "Il racconto avventuroso suddiviso in paragrafi usando \\n\\n tra un paragrafo e l'altro...",
+  "riassunto": "📌 INTRODUZIONE:\\n...\\n\\n🔍 I PUNTI PRINCIPALI:\\n- **Concetto 1**: spiegazione...\\n- **Concetto 2**: spiegazione...\\n\\n💡 IN SINTESI:\\n...",
   "parole_chiave": [
     {
       "termine": "Concetto chiave",
       "emoji": "Icona adatta",
-      "spiegazione": "Definizione semplice e simpatica in 1 o 2 frasi."
+      "spiegazione": "Definizione chiara e semplice in 1 o 2 frasi."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda stimolante per il bambino?",
+      "domanda": "Domanda di verifica della comprensione?",
       "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
       "risposta_corretta": 0,
-      "indizio": "Un aiutino giocoso per chi sbaglia."
+      "indizio": "Un aiutino chiaro per ragionare sulla risposta corretta."
     }
   ]
 }
@@ -1207,6 +1281,9 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       }
 
       parsedLesson.id = 'custom-' + Date.now();
+      // Ensure compatibility for both riassunto and storia_semplice
+      parsedLesson.riassunto = parsedLesson.riassunto || parsedLesson.storia_semplice || '';
+      parsedLesson.storia_semplice = parsedLesson.riassunto;
 
       // Save to localStorage
       let saved = [];
@@ -1227,7 +1304,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       this.loadLesson(parsedLesson);
       this.renderSavedLessonsList();
       this.switchTab('storia');
-      this.setMascotMessage("Evviva! Ho trasformato tutte le pagine del tuo libro in un gioco! Iniziamo dalla storia! 🚀", true);
+      this.setMascotMessage("Evviva! Ho preparato il riassunto completo, le flashcard e i quiz per questa lezione! 🚀", true);
 
     } catch (err) {
       this.sound.hint();

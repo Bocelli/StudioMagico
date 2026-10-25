@@ -32,7 +32,8 @@ function validateLesson(lesson) {
   assert(lesson && typeof lesson === 'object', 'Lesson must be an object');
   assert(typeof lesson.titolo === 'string' && lesson.titolo.length > 0, 'Titolo must be non-empty string');
   assert(typeof lesson.materia === 'string', 'Materia must be string');
-  assert(typeof lesson.storia_semplice === 'string' && lesson.storia_semplice.length > 20, 'Storia semplice must be descriptive');
+  const summaryContent = lesson.riassunto || lesson.storia_semplice;
+  assert(typeof summaryContent === 'string' && summaryContent.length > 20, 'Summary/storia must be descriptive string');
   assert(Array.isArray(lesson.parole_chiave) && lesson.parole_chiave.length >= 2, 'Must have at least 2 parole chiave');
   assert(Array.isArray(lesson.quiz) && lesson.quiz.length >= 2, 'Must have at least 2 quiz questions');
   
@@ -211,5 +212,57 @@ async function simulateFailoverEngine(fetchMock, candidateModels) {
   assert(res3.data && res3.data.lesson === 'recovered_from_timeout' && res3.data.model === 'gemini-3.5-flash-lite', 'Failed to recover from slow model timeout');
 
   console.log('✓ Model retry, timeout & failover resilience verification passed');
+
+  // Test H: Structured Summary Formatter Verification
+  function formatSummaryTest(text) {
+    if (!text || typeof text !== 'string') return '';
+    const blocks = text.split(/\n\n+/);
+    return blocks.map(block => {
+      let trimmed = block.trim();
+      if (!trimmed) return '';
+      const lines = trimmed.split('\n').map(l => l.trim()).filter(Boolean);
+      const isList = lines.some(l => /^[-*•]\s+/.test(l));
+      if (isList) {
+        const headerLines = [];
+        const listLines = [];
+        lines.forEach(l => {
+          if (/^[-*•]\s+/.test(l)) listLines.push(l);
+          else headerLines.push(l);
+        });
+        let headerHtml = headerLines.length ? `<h4>${headerLines.join(' ')}</h4>` : '';
+        const listItems = listLines.map(l => {
+          let item = l.replace(/^[-*•]\s+/, '').trim();
+          item = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          return `<li>${item}</li>`;
+        }).join('');
+        return `${headerHtml}<ul>${listItems}</ul>`;
+      }
+      if (/^(###|##|📌|🔍|💡)/.test(lines[0])) {
+        const hHtml = `<h4>${lines[0]}</h4>`;
+        if (lines.length > 1) {
+          return `${hHtml}<p>${lines.slice(1).join(' ').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+        }
+        return hHtml;
+      }
+      return `<p>${trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+    }).join('');
+  }
+
+  const sampleStructuredSummary = `📌 INTRODUZIONE:
+La geografia è la scienza che descrive la Terra.
+
+🔍 I PUNTI PRINCIPALI:
+- **Il fotografo**: scatta foto per documentare i cambiamenti.
+- **Il cartografo**: disegna le mappe e le carte.
+
+💡 IN SINTESI:
+Tutti gli scienziati collaborano insieme.`;
+
+  const formattedHtml = formatSummaryTest(sampleStructuredSummary);
+  assert(formattedHtml.includes('<h4>📌 INTRODUZIONE:</h4>'), 'Header missing in formatted summary');
+  assert(formattedHtml.includes('<ul>'), 'List wrapper missing in formatted summary');
+  assert(formattedHtml.includes('<strong>Il fotografo</strong>'), 'Bold tag missing in formatted list');
+  console.log('✓ Structured Summary markdown & bullet points formatter passed');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

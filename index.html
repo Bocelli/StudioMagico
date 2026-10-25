@@ -55,7 +55,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.8 (Fast Multi-Model)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.9 (Structured Summary)</span></span>
         </div>
       </div>
 
@@ -110,7 +110,7 @@
       
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-10">
         <!-- Mascot Avatar -->
-        <div class="mascot-bounce flex-shrink-0 cursor-pointer" onclick="App.setMascotMessage('Bip bop! Sono Leo, il tuo robottino aiutante! Tocca i pulsanti per studiare divertendoti!', true)" title="Tocca Leo!">
+        <div class="mascot-bounce flex-shrink-0 cursor-pointer" onclick="App.setMascotMessage('Tocca i pulsanti per leggere il riassunto, ripassare con le flashcard o metterti alla prova col quiz!', true)" title="Assistente di Studio">
           <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white border-4 border-amber-300 shadow-xl flex items-center justify-center text-5xl relative">
             🤖
             <span class="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
@@ -122,11 +122,11 @@
         <!-- Speech Bubble -->
         <div class="flex-1 text-center sm:text-left">
           <div class="inline-block bg-white/20 backdrop-blur-sm text-amber-200 text-xs font-black uppercase px-3 py-1 rounded-full mb-1 tracking-wide">
-            Il Tuo Tutor Personale: Leo
+            Il Tuo Assistente di Studio
           </div>
           <div class="bg-white text-slate-800 p-4 rounded-2xl shadow-md border-2 border-indigo-100 max-w-2xl">
             <p id="mascotMessage" class="text-base sm:text-lg font-bold font-heading text-indigo-950 leading-snug">
-              Ciao campione! Pronto a fare scoperte incredibili oggi? 🚀
+              Pronto a studiare? Leggi il riassunto strutturato, gira le flashcard e mettiti alla prova con il quiz! 🚀
             </p>
           </div>
         </div>
@@ -164,7 +164,7 @@
       <nav class="grid grid-cols-3 gap-2 sm:gap-4 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
         <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
           <span>📖</span>
-          <span>La Storia</span>
+          <span>Il Riassunto</span>
         </button>
         <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
           <span>🗂️</span>
@@ -177,34 +177,34 @@
       </nav>
     </section>
 
-    <!-- TAB 1: LA STORIA SEMPLICE (Spiegata per un bambino di 8 anni) -->
+    <!-- TAB 1: IL RIASSUNTO STRUTTURATO (Chiaro e ben organizzato per la 3ª elementare) -->
     <section id="tab-storia" class="space-y-4">
       <div class="card-clay p-6 sm:p-8 bg-white border-blue-200">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
           <div>
-            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Metodo Storytelling</span>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Guida allo Studio</span>
             <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-              C'era una volta...
+              Il Riassunto della Lezione
             </h3>
           </div>
           <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
             <span>🔊</span>
-            <span>Ascolta con Leo</span>
+            <span>Ascolta il Riassunto</span>
           </button>
         </div>
 
-        <!-- Story Paragraphs -->
+        <!-- Summary Paragraphs / Formatted Content -->
         <article id="storyContent" class="space-y-4 max-w-none">
           <!-- Populated by JavaScript -->
         </article>
 
         <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
           <p class="text-sm font-semibold text-slate-500">
-            💡 Suggerimento: Dopo aver letto o ascoltato la storia, prova le Flashcard per fissare le parole magiche!
+            💡 Suggerimento: Dopo aver letto o ascoltato il riassunto, prova le Flashcard per fissare i concetti chiave!
           </p>
           <button id="markReadBtn" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow">
             <span>⭐</span>
-            <span>Ho letto la storia! (+20 ⭐)</span>
+            <span>Ho letto il riassunto! (+20 ⭐)</span>
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@
             Le Parole Magiche della Lezione
           </h3>
           <p class="text-sm text-slate-500 font-medium mt-1">
-            Tocca la carta per girarla e ascolta il significato con Leo!
+            Tocca la carta per girarla e ascolta la spiegazione con un click!
           </p>
         </div>
 
@@ -345,7 +345,7 @@
       <!-- Action Button -->
       <button id="analyzeBtn" class="btn-tactile btn-emerald w-full py-3.5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg">
         <span>✨</span>
-        <span>Crea Lezione Magica con IA</span>
+        <span>Elabora Riassunto, Flashcard e Quiz</span>
       </button>
     </div>
   </div>
@@ -389,8 +389,8 @@
           </label>
           <select id="modelSelectInput" class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 text-sm font-semibold bg-white text-slate-800">
             <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash (Raccomandato & Gratuito)</option>
-            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Ultra Rapido)</option>
+            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
           </select>
         </div>
 
@@ -453,7 +453,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="demo-data.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
