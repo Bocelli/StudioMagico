@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudioMagico 🚀 - Il Tuo Compagno di Studio per le Elementari</title>
+
+  <!-- Google Fonts: Fredoka (Playful rounded headings) & Nunito (Readable, friendly body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Fredoka', 'sans-serif'],
+            body: ['Nunito', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              blue: '#3B82F6',
+              amber: '#F59E0B',
+              coral: '#F97316',
+              green: '#10B981',
+              purple: '#8B5CF6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Canvas Confetti for Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Kid UI Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-amber-200">
+
+  <!-- TOP HEADER / NAV BAR -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-4 py-3 sm:px-6 shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-2xl shadow-md border-b-2 border-indigo-700">
+          🚀
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
+            Studio<span class="text-blue-600">Magico</span>
+          </h1>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare</span>
+        </div>
+      </div>
+
+      <!-- Center & Right Stats and Actions -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <!-- Stars Counter -->
+        <div id="headerStars" class="bg-amber-100/80 border-2 border-amber-300 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <span class="text-xl">⭐</span>
+          <span id="starCount" class="font-extrabold text-amber-900 font-heading text-lg">50</span>
+        </div>
+
+        <!-- Day Streak -->
+        <div class="hidden sm:flex bg-orange-100 border-2 border-orange-300 px-3 py-1.5 rounded-full items-center gap-1.5 shadow-sm">
+          <span class="text-lg">🔥</span>
+          <span id="streakCount" class="font-extrabold text-orange-900 font-heading text-sm">1 Giorno</span>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button id="soundToggle" class="hidden md:inline-flex btn-tactile btn-slate text-xs font-bold px-3 py-2 rounded-xl" title="Attiva/Disattiva Suoni">
+          🔔 Suoni: Attivi
+        </button>
+
+        <!-- New Photo Upload CTA Button -->
+        <button id="openUploadBtn" class="btn-tactile btn-blue px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-md">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          <span class="hidden sm:inline">Foto Libro</span>
+          <span class="sm:hidden">Foto</span>
+        </button>
+
+        <!-- Parent Settings Button -->
+        <button id="openSettingsBtn" class="btn-tactile btn-slate p-2.5 rounded-2xl" title="Impostazioni per il Genitore (Chiave IA)">
+          <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- LEO THE ROBOT TUTOR MASCOT BANNER -->
+    <section class="card-clay p-4 sm:p-6 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 text-white relative overflow-hidden">
+      <!-- Decorative background stars -->
+      <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+      
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-10">
+        <!-- Mascot Avatar -->
+        <div class="mascot-bounce flex-shrink-0 cursor-pointer" onclick="App.setMascotMessage('Bip bop! Sono Leo, il tuo robottino aiutante! Tocca i pulsanti per studiare divertendoti!', true)" title="Tocca Leo!">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white border-4 border-amber-300 shadow-xl flex items-center justify-center text-5xl relative">
+            🤖
+            <span class="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
+              Online
+            </span>
+          </div>
+        </div>
+
+        <!-- Speech Bubble -->
+        <div class="flex-1 text-center sm:text-left">
+          <div class="inline-block bg-white/20 backdrop-blur-sm text-amber-200 text-xs font-black uppercase px-3 py-1 rounded-full mb-1 tracking-wide">
+            Il Tuo Tutor Personale: Leo
+          </div>
+          <div class="bg-white text-slate-800 p-4 rounded-2xl shadow-md border-2 border-indigo-100 max-w-2xl">
+            <p id="mascotMessage" class="text-base sm:text-lg font-bold font-heading text-indigo-950 leading-snug">
+              Ciao campione! Pronto a fare scoperte incredibili oggi? 🚀
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRENT LESSON HEADER CARD -->
+    <section class="card-clay p-5 sm:p-6 bg-white">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <span id="lessonSubject" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
+          Storia
+        </span>
+        <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
+          <span>📚</span>
+          <span>Scegli Altra Lezione</span>
+        </button>
+      </div>
+
+      <h2 id="lessonTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading mb-4">
+        I Primi Uomini e la Meraviglia del Fuoco
+      </h2>
+
+      <!-- DRAWER: Lezioni Precaricate / Salvate -->
+      <div id="lessonsDrawer" class="hidden my-4 p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-slate-700 font-heading text-lg">Lezioni Pronte per la 3ª Elementare:</h3>
+          <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm font-bold">Chiudi ✕</button>
+        </div>
+        <div id="demoLessonsList" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- TABS NAVIGATION (Big Tactile Buttons for 8-year-old hands) -->
+      <nav class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
+        <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
+          <span>📖</span>
+          <span>La Storia</span>
+        </button>
+        <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+          <span>🗂️</span>
+          <span>Flashcard</span>
+        </button>
+        <button data-tab-target="quiz" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+          <span>🎯</span>
+          <span>Super Quiz</span>
+        </button>
+        <button data-tab-target="curiosita" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+          <span>💡</span>
+          <span>Curiosità</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- TAB 1: LA STORIA SEMPLICE (Spiegata per un bambino di 8 anni) -->
+    <section id="tab-storia" class="space-y-4">
+      <div class="card-clay p-6 sm:p-8 bg-white border-blue-200">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Metodo Storytelling</span>
+            <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
+              C'era una volta...
+            </h3>
+          </div>
+          <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
+            <span>🔊</span>
+            <span>Ascolta con Leo</span>
+          </button>
+        </div>
+
+        <!-- Story Paragraphs -->
+        <article id="storyContent" class="space-y-4 max-w-none">
+          <!-- Populated by JavaScript -->
+        </article>
+
+        <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+          <p class="text-sm font-semibold text-slate-500">
+            💡 Suggerimento: Dopo aver letto o ascoltato la storia, prova le Flashcard per fissare le parole magiche!
+          </p>
+          <button id="markReadBtn" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow">
+            <span>⭐</span>
+            <span>Ho letto la storia! (+20 ⭐)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: FLASHCARD MAGICHE (3D Flip Cards) -->
+    <section id="tab-flashcard" class="hidden space-y-4">
+      <div class="card-clay p-6 sm:p-8 bg-white text-center">
+        <div class="max-w-md mx-auto mb-4">
+          <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block">Allenamento Visivo</span>
+          <h3 class="text-2xl font-bold text-slate-900 font-heading">
+            Le Parole Magiche della Lezione
+          </h3>
+          <p class="text-sm text-slate-500 font-medium mt-1">
+            Tocca la carta per girarla e ascolta il significato con Leo!
+          </p>
+        </div>
+
+        <div id="flashcardContainer" class="py-4">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SUPER QUIZ (Interactive Gamified Questions) -->
+    <section id="tab-quiz" class="hidden space-y-4">
+      <div id="quizBox">
+        <!-- Populated by JavaScript -->
+      </div>
+    </section>
+
+    <!-- TAB 4: CURIOSITÀ E SFIDE -->
+    <section id="tab-curiosita" class="hidden space-y-4">
+      <div id="curiositaContent">
+        <!-- Populated by JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto py-6 border-t border-slate-200 bg-white text-center text-xs font-semibold text-slate-500">
+    <p>StudioMagico 🚀 — Creato per supportare i bambini nell'apprendimento autonomo e sereno.</p>
+    <p class="mt-1 text-slate-400">Nessuna registrazione richiesta • Funziona sul tuo dispositivo con IA gratuita</p>
+  </footer>
+
+  <!-- MODAL: CARICA FOTO DEL LIBRO (Nuova Lezione) -->
+  <div id="uploadModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="card-clay max-w-lg w-full bg-white p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">📸</span>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">Crea Nuova Lezione</h3>
+        </div>
+        <button id="closeUploadBtn" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1">✕</button>
+      </div>
+
+      <p class="text-sm text-slate-600 font-medium mb-5">
+        Fotografa la pagina del sussidiario o quaderno: l'IA la trasformerà istantaneamente in una storia, flashcard e quiz adatti alla 3ª elementare!
+      </p>
+
+      <!-- Dropzone / Image Picker -->
+      <div id="dropZone" class="border-3 border-dashed border-slate-300 rounded-3xl p-6 text-center hover:border-blue-400 transition-all cursor-pointer bg-slate-50 mb-4">
+        <div id="uploadPlaceholder">
+          <span class="text-5xl block mb-2">📖</span>
+          <p class="font-bold text-slate-700 font-heading text-lg">Trascina qui la foto della pagina</p>
+          <p class="text-xs text-slate-400 font-semibold mb-4">oppure scatta una foto al volo</p>
+
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <!-- Camera Mobile Input -->
+            <label class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 shadow cursor-pointer">
+              <span>📷</span>
+              <span>Scatta Foto</span>
+              <input type="file" id="cameraPhotoInput" accept="image/*" capture="environment" class="hidden">
+            </label>
+
+            <!-- File Select Input -->
+            <label class="btn-tactile btn-blue px-4 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 shadow cursor-pointer">
+              <span>📁</span>
+              <span>Scegli File</span>
+              <input type="file" id="bookPhotoInput" accept="image/*" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <!-- Preview Box -->
+        <div id="photoPreview" class="hidden">
+          <img id="photoPreviewImg" class="max-h-56 mx-auto rounded-2xl border-2 border-slate-200 shadow-sm mb-3 object-cover">
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">
+            Foto caricata con successo! ✅
+          </span>
+        </div>
+      </div>
+
+      <!-- Optional Manual Notes -->
+      <div class="mb-5">
+        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+          Oppure incolla/scrivi gli appunti (opzionale):
+        </label>
+        <textarea id="manualTextInput" rows="2" placeholder="Es: Capitolo sui dinosauri erbivori o il ciclo delle stagioni..." class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 text-sm font-medium resize-none"></textarea>
+      </div>
+
+      <!-- AI Loading State -->
+      <div id="aiLoadingState" class="hidden p-4 bg-indigo-50 border-2 border-indigo-200 rounded-2xl mb-4 text-center">
+        <div class="inline-block animate-spin text-3xl mb-2">⚙️</div>
+        <p id="aiLoadingText" class="font-bold text-indigo-950 font-heading text-base">
+          Leo sta leggendo le pagine del tuo libro... 📖
+        </p>
+        <p class="text-xs text-indigo-600 mt-1 font-semibold">Ci vogliono circa 5-10 secondi</p>
+      </div>
+
+      <!-- Action Button -->
+      <button id="analyzeBtn" class="btn-tactile btn-emerald w-full py-3.5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg">
+        <span>✨</span>
+        <span>Crea Lezione Magica con IA</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPOSTAZIONI GENITORE (Gemini Free API Key) -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="card-clay max-w-lg w-full bg-white p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">⚙️</span>
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">Pannello Genitore</h3>
+        </div>
+        <button id="closeSettingsBtn" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+          <h4 class="font-bold text-blue-950 font-heading text-base mb-1">
+            Come ottenere l'IA Gratuita di Google Gemini:
+          </h4>
+          <ol class="text-xs sm:text-sm text-blue-900 space-y-1.5 list-decimal pl-4 font-medium">
+            <li>Vai su <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline font-bold text-blue-700">Google AI Studio (Clicca qui)</a> con il tuo account Google normale.</li>
+            <li>Clicca sul pulsante blu <strong>"Create API key"</strong>.</li>
+            <li>Copia la chiave (è una stringa che inizia per <code>AIza...</code>) e incollala qui sotto.</li>
+          </ol>
+          <p class="text-[11px] text-blue-700 mt-2 font-semibold">
+            Nota: Google offre il modello Gemini Flash completamente <strong>GRATIS</strong> con limiti ampiamente sufficienti per lo studio quotidiano!
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Chiave API Google Gemini:
+          </label>
+          <input type="password" id="apiKeyInput" placeholder="Incolla qui la chiave (es: AIzaSy...)" class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 font-mono text-sm">
+        </div>
+
+        <button id="saveApiKeyBtn" class="btn-tactile btn-blue w-full py-3 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow">
+          <span>💾</span>
+          <span>Salva Chiave API</span>
+        </button>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Tutti i dati rimangono salvati solo nel tuo browser.</span>
+          <button onclick="if(confirm('Vuoi azzerare i progressi e le stelline?')){localStorage.removeItem('studio_magico_stats'); location.reload();}" class="text-red-500 hover:underline font-bold">
+            Azzera Progressi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DIPLOMA DI ESPERTO (Premio per il bambino) -->
+  <div id="diplomaModal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="card-clay max-w-xl w-full bg-gradient-to-b from-amber-50 via-white to-amber-50 p-6 sm:p-10 border-4 border-amber-400 text-center relative shadow-2xl">
+      <button onclick="App.closeDiploma()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 print:hidden">✕</button>
+
+      <span class="text-6xl sm:text-7xl mb-2 block">🌟</span>
+      <span class="text-xs font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-4 py-1.5 rounded-full inline-block mb-3">
+        Certificato di Merito Ufficiale
+      </span>
+
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-amber-950 font-heading mb-2">
+        Diploma di Grande Esploratore!
+      </h2>
+
+      <p class="text-slate-600 text-base font-medium mb-6">
+        Questo attestato certifica che il nostro brillante studente ha completato con entusiasmo e superato brillantemente la lezione:
+      </p>
+
+      <div class="p-4 bg-white rounded-2xl border-2 border-amber-300 shadow-sm max-w-md mx-auto mb-6">
+        <h3 id="diplomaLessonTitle" class="text-xl sm:text-2xl font-bold text-indigo-900 font-heading">
+          I Primi Uomini e la Meraviglia del Fuoco
+        </h3>
+        <p class="text-xs font-bold text-amber-600 mt-1">Livello: Terza Elementare ⭐ Super Campione</p>
+      </div>
+
+      <div class="flex items-center justify-around border-t border-b border-amber-200 py-3 mb-6 max-w-sm mx-auto text-xs font-bold text-slate-600">
+        <div>Data: <span id="diplomaDate">Oggi</span></div>
+        <div class="text-amber-500 text-lg">★★★</div>
+        <div>Firma di Leo: 🤖</div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-3 print:hidden">
+        <button onclick="window.print()" class="btn-tactile btn-amber px-6 py-2.5 rounded-2xl font-bold text-base flex items-center gap-2 shadow">
+          <span>🖨️</span>
+          <span>Stampa o Salva PDF</span>
+        </button>
+        <button onclick="App.closeDiploma()" class="btn-tactile btn-slate px-5 py-2.5 rounded-2xl font-bold text-base">
+          Torna allo Studio
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="demo-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "studio-magico",
+  "version": "1.0.0",
+  "description": "App di studio intelligente e giocosa per bambini della scuola primaria con IA gratuita (Gemini)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "keywords": ["scuola-elementare", "studio-ia", "gemini", "bambini", "quiz", "flashcard"],
+  "author": "Antigravity + Ponytail",
+  "license": "MIT"
+}
