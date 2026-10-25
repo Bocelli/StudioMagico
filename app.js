@@ -566,7 +566,7 @@ const App = {
       listenStoryBtn.addEventListener('click', () => {
         if (this.voice.isSpeaking) {
           this.voice.stop();
-          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Riassunto</span>';
+          listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta la Spiegazione</span>';
         } else if (this.currentLesson) {
           listenStoryBtn.innerHTML = '<span>⏹️</span><span>Ferma Voce</span>';
           const content = this.currentLesson.riassunto || this.currentLesson.storia_semplice || '';
@@ -574,11 +574,18 @@ const App = {
             .replace(/[*#•_~`>-]/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
+
+          let speechParts = `${this.currentLesson.titolo}. ${cleanSpeech}`;
+          const cards = this.currentLesson.parole_chiave;
+          if (Array.isArray(cards) && cards.length > 0) {
+            speechParts += '. Ora ascoltiamo i punti chiave: ' + cards.map(c => `${c.termine}: ${c.spiegazione}`).join('. ');
+          }
+
           this.voice.speak(
-            `${this.currentLesson.titolo}. ${cleanSpeech}`,
+            speechParts,
             () => {},
             () => {
-              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta il Riassunto</span>';
+              listenStoryBtn.innerHTML = '<span>🔊</span><span>Ascolta la Spiegazione</span>';
             }
           );
         }
@@ -739,6 +746,9 @@ const App = {
       storyEl.innerHTML = this.formatSummary(content);
     }
 
+    // Render Key Points with brief explanations
+    this.renderKeyPoints();
+
     // Reset Read button
     const markReadBtn = document.getElementById('markReadBtn');
     if (markReadBtn) {
@@ -748,7 +758,7 @@ const App = {
         markReadBtn.innerHTML = '<span>✅</span><span>Completato! (+20 ⭐)</span>';
         markReadBtn.classList.add('opacity-75', 'cursor-not-allowed');
       } else {
-        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto il riassunto! (+20 ⭐)</span>';
+        markReadBtn.innerHTML = '<span>⭐</span><span>Ho letto la spiegazione! (+20 ⭐)</span>';
         markReadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
       }
     }
@@ -756,6 +766,56 @@ const App = {
     // Render Flashcards & Quiz
     this.renderFlashcard();
     this.renderQuizQuestion();
+  },
+
+  // --- Key Points (Punti Chiave con Breve Spiegazione) ---
+  renderKeyPoints() {
+    const keyPointsGrid = document.getElementById('keyPointsGrid');
+    const keyPointsSection = document.getElementById('keyPointsSection');
+    if (!keyPointsGrid || !keyPointsSection) return;
+
+    const cards = (this.currentLesson && Array.isArray(this.currentLesson.parole_chiave))
+      ? this.currentLesson.parole_chiave
+      : [];
+
+    if (cards.length === 0) {
+      keyPointsSection.classList.add('hidden');
+      return;
+    }
+
+    keyPointsSection.classList.remove('hidden');
+    keyPointsGrid.innerHTML = cards.map((item, idx) => `
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 border-2 border-indigo-100 hover:border-indigo-300 transition-all shadow-sm flex items-start gap-3.5 group">
+        <div class="text-3xl sm:text-4xl flex-shrink-0 select-none bg-white p-2 rounded-2xl shadow-xs border border-indigo-100/60">
+          ${item.emoji || '⭐'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <h5 class="text-base sm:text-lg font-extrabold text-indigo-950 font-heading leading-tight">
+              ${item.termine}
+            </h5>
+            <button type="button" onclick="App.speakSingleKeyPoint(${idx})" class="btn-tactile btn-slate text-xs font-bold px-2 py-1 rounded-xl flex items-center gap-1 text-slate-600 hover:text-indigo-600 shadow-xs" title="Ascolta questo punto chiave">
+              <span>🔊</span>
+            </button>
+          </div>
+          <p class="text-sm sm:text-base font-medium text-slate-700 mt-1.5 leading-snug">
+            ${item.spiegazione}
+          </p>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  speakSingleKeyPoint(index) {
+    if (!this.currentLesson || !this.currentLesson.parole_chiave) return;
+    const item = this.currentLesson.parole_chiave[index];
+    if (!item) return;
+
+    if (this.voice.isSpeaking) {
+      this.voice.stop();
+    }
+    const textToSpeak = `${item.termine}. ${item.spiegazione}`;
+    this.voice.speak(textToSpeak);
   },
 
   // --- Flashcard Logic ---
@@ -1175,7 +1235,7 @@ const App = {
 
       const loadingSteps = [
         `Lettura in corso delle ${this.uploadedImages.length > 1 ? this.uploadedImages.length + ' pagine' : 'pagine'} del libro... 📖`,
-        "Scrittura della spiegazione continua e scorrevole per il bambino... ✏️",
+        "Analisi di tutti i punti chiave con le spiegazioni semplici... 🔍",
         "Generazione delle flashcard didattiche... 🗂️",
         "Creazione del Super Quiz per la verifica... 🎯 (ancora pochi istanti!)"
       ];
@@ -1186,50 +1246,48 @@ const App = {
       }, 3000);
 
       const totalPages = this.uploadedImages.length;
-      // Target for flashcards and quiz (balanced for kid memory)
-      const targetCount = totalPages > 1 ? Math.min(8, Math.max(5, totalPages * 3)) : 4;
+      // Target for key points, flashcards and quiz (extract all key points, 4-8)
+      const targetCount = totalPages > 1 ? Math.min(8, Math.max(5, totalPages * 3)) : 5;
 
       const promptText = `
-Sei un maestro di scuola elementare specializzato nel rendere le lezioni BREVI, CHIARE e ACCATTIVANTI per bambini di 3ª elementare (8-9 anni).
-Il tuo obiettivo è spiegare il succo della lezione con un TESTO CORTISSIMO, SCATTANTE E FACILE DA MEMORIZZARE (divorabile in meno di 1 minuto!).
+Sei un maestro di scuola elementare specializzato nel rendere le lezioni CHIARE, SCATTANTI e FACILI DA MEMORIZZARE per bambini di 3ª elementare (8-9 anni).
+Il tuo obiettivo è analizzare attentamente le pagine caricate, individuare TUTTI I PUNTI CHIAVE e fornire per ciascuno di essi una BREVE SPIEGAZIONE semplice e immediata, insieme a una breve introduzione della lezione, flashcard e quiz.
 
-REGOLE TASSATIVE SULLA LUNGHEZZA E SEMPLICITÀ (campo "riassunto"):
-1. MASSIMA BREVITÀ (VIETATO dilungarsi, appesantire o fare trattati):
-   - Scrivi ESATTAMENTE 2 (o al massimo 3) brevissimi paragrafi.
-   - Lunghezza totale: tra 80 e 120 parole complessive (NON di più!).
-   - Il bambino deve leggerlo o ascoltarlo in 45-60 secondi senza stancarsi.
-   - Usa frasi corte, dirette e limpide (massimo 10-12 parole per frase).
+REGOLE PER IL CONTENUTO:
 
-2. SOLO IL SUCCO ESSENZIALE:
-   - Spiega SOLO i concetti chiave indispensabili per la scuola, tagliando via dettagli secondari e chiacchiere.
-   - Metti in **grassetto** solo i 3 o 4 termini più importanti.
-   - Niente elenchi puntati, niente titoletti ("📌 Introduzione" o simili), niente preamboli e nessuna conclusione cerimoniosa: vai dritto al punto fin dalla prima parola!
+1. INTRODUZIONE DELLA LEZIONE (campo "riassunto"):
+   - Scrivi una brevissima introduzione continua di 2 paragrafi (80-120 parole totali).
+   - Offre il quadro d'insieme della lezione collegando i concetti principali in modo scorrevole, piacevole e fresco.
+   - Evidenzia i concetti più importanti in **grassetto**.
+   - Usa frasi brevi e dirette (senza formule finte o infantili tipo "Ciao sono Leo" o "C'era una volta").
 
-3. TONO FRESCO, LIMPIDO E SERIO:
-   - Stile in terza persona, chiaro, incoraggiante e immediato.
-   - Niente roleplay infantile ("Ciao sono Leo", "Ciao piccolo esploratore", "Nella pagina successiva").
+2. TUTTI I PUNTI CHIAVE CON BREVE SPIEGAZIONE (campo "parole_chiave"):
+   - Analizza la lezione ed estrai TUTTI i punti chiave, concetti, mestieri, fasi o elementi principali spiegati nelle pagine (tra 4 e 8 punti chiave). Non tralasciare nessun concetto fondamentale!
+   - Per OGNI punto chiave analizzato assegna:
+     * "termine": il nome esatto e chiaro del concetto (es. "Il Cartografo", "La Selce", "L'Evaporazione").
+     * "emoji": un'icona simpatica e pertinente (es. 🗺️, 🪨, ☁️).
+     * "spiegazione": una BREVE SPIEGAZIONE di 1 o 2 frasi semplici (10-25 parole ciascuna), chiarissima per un bambino di 8 anni, che spiega esattamente che cos'è, cosa fa o come funziona.
 
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Riassumi il succo di tutte le pagine in questi 2-3 brevi paragrafi, e genera ${targetCount} flashcard e ${targetCount} quiz.` : ''}
+3. SUPER QUIZ (campo "quiz"):
+   - ${targetCount} domande a risposta multipla con 3 opzioni (una corretta) e un aiutino amichevole per verificare la comprensione dei punti chiave.
 
-REQUISITI PER FLASHCARD E QUIZ:
-- "parole_chiave": ${targetCount} flashcard con i termini essenziali e spiegazione semplice in una sola frase.
-- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni e un aiutino amichevole per verificare la comprensione.
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Analizza e spiega tutti i punti chiave di tutte le ${totalPages} pagine!` : ''}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
-  "titolo": "Titolo breve e chiaro",
+  "titolo": "Titolo breve e chiaro della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "riassunto": "Primo breve paragrafo che spiega subito il tema con i **termini chiave** (2-3 frasi corte)...\\n\\nSecondo breve paragrafo che completa il succo essenziale della lezione (2-3 frasi corte)...",
+  "riassunto": "Primo breve paragrafo che introduce l'argomento e i **termini chiave** (2-3 frasi corte)...\\n\\nSecondo breve paragrafo che completa la panoramica della lezione in modo scorrevole (2-3 frasi corte)...",
   "parole_chiave": [
     {
-      "termine": "Concetto chiave",
+      "termine": "Nome del punto chiave",
       "emoji": "Icona adatta",
-      "spiegazione": "Definizione brevissima e chiara in una sola frase."
+      "spiegazione": "Breve spiegazione in 1 o 2 frasi semplici e chiare per un bimbo di 8 anni."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda chiara per il bambino?",
+      "domanda": "Domanda chiara per verificare la comprensione?",
       "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
       "risposta_corretta": 0,
       "indizio": "Un aiutino semplice per ragionare."

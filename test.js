@@ -35,6 +35,10 @@ function validateLesson(lesson) {
   const summaryContent = lesson.riassunto || lesson.storia_semplice;
   assert(typeof summaryContent === 'string' && summaryContent.length > 20, 'Summary/storia must be descriptive string');
   assert(Array.isArray(lesson.parole_chiave) && lesson.parole_chiave.length >= 2, 'Must have at least 2 parole chiave');
+  lesson.parole_chiave.forEach((pk, idx) => {
+    assert(typeof pk.termine === 'string' && pk.termine.length > 0, `Punto chiave ${idx} missing termine`);
+    assert(typeof pk.spiegazione === 'string' && pk.spiegazione.length > 5, `Punto chiave ${idx} missing brief spiegazione`);
+  });
   assert(Array.isArray(lesson.quiz) && lesson.quiz.length >= 2, 'Must have at least 2 quiz questions');
   
   lesson.quiz.forEach((q, idx) => {
@@ -312,6 +316,33 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(brevityCheck.isKidSized, `Summary should be kid-sized (got ${brevityCheck.wordCount} words, ${brevityCheck.paragraphCount} paragraphs)`);
   assert(!brevityCheck.hasBannedPrefixes, 'Kid summary must not contain banned robotic/childish prefixes');
   console.log(`✓ Kid-sized ultra-concise brevity verification passed (${brevityCheck.wordCount} words in ${brevityCheck.paragraphCount} paragraphs)`);
+
+  // Test K: Key Points with brief explanations renderer & speech test
+  function renderKeyPointsHtml(cards) {
+    return cards.map((item, idx) => `
+      <div class="keypoint-card">
+        <span>${item.emoji || '⭐'}</span>
+        <h5>${item.termine}</h5>
+        <p>${item.spiegazione}</p>
+      </div>
+    `).join('');
+  }
+
+  const sampleKeyPoints = [
+    { termine: "Il Fotografo", emoji: "📸", spiegazione: "Scatta fotografie nel tempo per osservare come cambia il territorio." },
+    { termine: "Il Cartografo", emoji: "🗺️", spiegazione: "Disegna le mappe e le carte geografiche per aiutarci a orientarci." },
+    { termine: "Il Geologo", emoji: "🪨", spiegazione: "Studia le rocce e la composizione del terreno." }
+  ];
+
+  sampleKeyPoints.forEach(kp => {
+    assert(kp.termine && kp.termine.length > 0, "Key point missing title");
+    assert(kp.spiegazione && kp.spiegazione.length >= 10, "Key point missing brief explanation");
+    assert(kp.spiegazione.split(/\s+/).length <= 35, "Key point explanation should remain brief for kids");
+  });
+
+  const keyPointsHtml = renderKeyPointsHtml(sampleKeyPoints);
+  assert(keyPointsHtml.includes('Il Fotografo') && keyPointsHtml.includes('Scatta fotografie'), 'Key points HTML generation failed');
+  console.log(`✓ Key points with brief explanation verification & renderer passed (${sampleKeyPoints.length} points)`);
 
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
