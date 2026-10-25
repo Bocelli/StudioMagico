@@ -305,28 +305,50 @@ const App = {
       });
     }
 
-    // Multi-Image Handlers
-    const handleFiles = (fileList) => {
-      if (!fileList || fileList.length === 0) return;
-      Array.from(fileList).forEach(file => {
-        if (!file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target.result;
-          const mimeType = dataUrl.substring(5, dataUrl.indexOf(';'));
+    // Multi-Image Handlers with Automatic Canvas Compression (Ponytail: max 1280px, ~150KB per page)
+    // shortcut: client-side 2D canvas resize, upgrade to Web Workers only if processing >20 pages
+    const compressAndAddImage = (file) => {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxDim = 1280;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
           const base64 = dataUrl.split(',')[1];
           this.uploadedImages.push({
             id: 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
             dataUrl: dataUrl,
-            mimeType: mimeType,
+            mimeType: 'image/jpeg',
             base64: base64,
             name: file.name
           });
           this.renderUploadedPagesPreview();
           this.sound.pop();
         };
-        reader.readAsDataURL(file);
-      });
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    const handleFiles = (fileList) => {
+      if (!fileList || fileList.length === 0) return;
+      Array.from(fileList).forEach(file => compressAndAddImage(file));
     };
 
     const fileInput = document.getElementById('bookPhotoInput');
@@ -956,22 +978,24 @@ const App = {
       return;
     }
 
-    if (analyzeBtn) analyzeBtn.disabled = true;
-    if (loadingState) loadingState.classList.remove('hidden');
+    let interval = null;
+    try {
+      if (analyzeBtn) analyzeBtn.disabled = true;
+      if (loadingState) loadingState.classList.remove('hidden');
 
-    const loadingSteps = [
-      `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
-      "Estraendo le idee più importanti e le parole magiche... ✨",
-      "Scrivendo la storia divertente per la 3ª elementare... ✏️",
-      "Creando il Super Quiz con aiutini amichevoli... 🎯"
-    ];
-    let stepIdx = 0;
-    const interval = setInterval(() => {
-      stepIdx = (stepIdx + 1) % loadingSteps.length;
-      if (loadingText) loadingText.innerText = loadingSteps[stepIdx];
-    }, 2500);
+      const loadingSteps = [
+        `Leo sta leggendo ${this.uploadedImages.length > 1 ? 'le ' + this.uploadedImages.length + ' pagine' : 'la pagina'} del tuo libro... 📖`,
+        "Estraendo le idee più importanti e le parole magiche... ✨",
+        "Scrivendo la storia divertente per la 3ª elementare... ✏️",
+        "Creando il Super Quiz con aiutini amichevoli... 🎯"
+      ];
+      let stepIdx = 0;
+      interval = setInterval(() => {
+        stepIdx = (stepIdx + 1) % loadingSteps.length;
+        if (loadingText) loadingText.innerText = loadingSteps[stepIdx];
+      }, 2500);
 
-    const promptText = `
+      const promptText = `
 Sei "Leo", il compagno di studio più empatico, chiaro e simpatico per bambini di 3ª elementare (8-9 anni).
 Il bambino fa fatica con il noioso "leggi e ripeti". 
 ${this.uploadedImages.length > 1 ? `Ci sono ${this.uploadedImages.length} pagine del libro caricate in sequenza relative allo stesso argomento. Analizzale insieme come un'unica lezione coerente e completa.` : 'Analizza la pagina del libro fornita.'}
@@ -1003,13 +1027,12 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 }
 `;
 
-    try {
       const parts = [];
-      // Push all uploaded pages in order
+      // Push all compressed pages in order
       this.uploadedImages.forEach((img) => {
         parts.push({
           inline_data: {
-            mime_type: img.mimeType,
+            mime_type: img.mimeType || 'image/jpeg',
             data: img.base64
           }
         });
@@ -1030,17 +1053,35 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       for (const modelName of modelsToTry) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          
+          // 40s abort timeout to guarantee it never hangs indefinitely
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 40000);
+
+          const genConfig = {
+            responseMimeType: "application/json",
+            temperature: 0.2
+          };
+
+          // Gemini 3.8 Flash supports fast reasoning via low thinking level
+          if (modelName.includes('3.8')) {
+            genConfig.thinkingConfig = { thinkingLevel: "low" };
+          }
+
           const response = await fetch(url, {
             method: 'POST',
+            signal: controller.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: parts }],
-              generationConfig: {
-                response_mime_type: "application/json",
-                temperature: 0.3
-              }
+              contents: [{
+                role: "user",
+                parts: parts
+              }],
+              generationConfig: genConfig
             })
           });
+
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             data = await response.json();
@@ -1058,6 +1099,11 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
             }
           }
         } catch (callErr) {
+          if (callErr.name === 'AbortError') {
+            console.warn(`Timeout su modello ${modelName}, provo il successivo...`);
+            lastErrorMessage = "La richiesta ha impiegato troppo tempo (timeout di rete).";
+            continue;
+          }
           if (callErr.message && (callErr.message.includes('not found') || callErr.message.includes('no longer available') || callErr.message.includes('not supported'))) {
             continue;
           }
@@ -1068,7 +1114,11 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       if (!data) {
         throw new Error(lastErrorMessage || "Nessun modello Gemini ha risposto correttamente.");
       }
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      const candParts = data.candidates?.[0]?.content?.parts || [];
+      // In Gemini 3.8 Flash, filter out thinking blocks to retrieve the final JSON
+      const textPart = candParts.slice().reverse().find(p => p.text && !p.thought) || candParts[0];
+      const rawText = textPart?.text;
       if (!rawText) throw new Error("La risposta dell'IA era vuota. Riprova con una foto più nitida.");
 
       // Parse JSON using the tested resilient extractor
@@ -1087,10 +1137,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       saved.unshift(parsedLesson);
       localStorage.setItem('studio_magico_custom_lessons', JSON.stringify(saved));
 
-      clearInterval(interval);
-      if (loadingState) loadingState.classList.add('hidden');
       if (uploadModal) uploadModal.classList.add('hidden');
-      if (analyzeBtn) analyzeBtn.disabled = false;
 
       // Clear upload inputs
       this.uploadedImages = [];
@@ -1104,12 +1151,13 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       this.setMascotMessage("Evviva! Ho trasformato tutte le pagine del tuo libro in un gioco! Iniziamo dalla storia! 🚀", true);
 
     } catch (err) {
-      clearInterval(interval);
-      if (loadingState) loadingState.classList.add('hidden');
-      if (analyzeBtn) analyzeBtn.disabled = false;
       this.sound.hint();
       console.error(err);
       alert("Si è verificato un errore durante l'elaborazione:\n" + err.message + "\n\nSuggerimento: Controlla che la chiave API sia valida e che le foto siano ben illuminate.");
+    } finally {
+      if (interval) clearInterval(interval);
+      if (loadingState) loadingState.classList.add('hidden');
+      if (analyzeBtn) analyzeBtn.disabled = false;
     }
   },
 

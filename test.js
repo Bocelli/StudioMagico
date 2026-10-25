@@ -101,4 +101,18 @@ assert(partsResult[0].inline_data.data === 'page1data');
 assert(partsResult[1].inline_data.data === 'page2data');
 console.log('✓ Multi-page Gemini payload verification passed');
 
+// Test F: Gemini 3.8 Thinking Block Separator
+function extractTextFromParts(parts) {
+  const textPart = parts.slice().reverse().find(p => p.text && !p.thought) || parts[0];
+  return textPart ? textPart.text : null;
+}
+
+const mockCandidatesWithThinking = [
+  { thought: true, text: "Ragiono sulla storia e creo il quiz..." },
+  { text: '{"titolo": "Il Vulcano", "materia": "Geografia", "storia_semplice": "Un vulcano è una montagna speciale...", "parole_chiave": [{"termine": "Magma", "spiegazione": "Roccia fusa caldissima"}], "quiz": [{"domanda": "Cosa esce?", "opzioni": ["Lava", "Acqua"], "risposta_corretta": 0, "indizio": "È rossa e calda"}]}' }
+];
+const extractedText = extractTextFromParts(mockCandidatesWithThinking);
+assert(extractedText.includes('Il Vulcano'), 'Failed to separate thinking part');
+console.log('✓ Gemini 3.8 thinking block separator passed');
+
 console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
