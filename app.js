@@ -1067,13 +1067,13 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       });
 
       // Candidate models for automatic failover (Gemini 3 active generation)
-      // Note: gemini-2.0 and gemini-1.5 are permanently shut down by Google for new users
-      const candidateModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+      // Flash-Lite is placed as immediate fallback for ultra-low latency document processing
+      const candidateModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
       let data = null;
       let lastErrorMessage = '';
       let usedModel = 'gemini-3.8-flash';
 
-      const timeoutId = setTimeout(() => abortController.abort(), 120000);
+      const timeoutId = setTimeout(() => abortController.abort(), 100000);
 
       modelLoop:
       for (const modelToCall of candidateModels) {
@@ -1084,18 +1084,30 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
           responseMimeType: "application/json",
           temperature: 0.2
         };
+        // Use "minimal" thinking to ensure fastest response without lengthy reasoning delays
         if (modelToCall.includes('3.8') || modelToCall.includes('3.6')) {
-          genConfig.thinkingConfig = { thinkingLevel: "low" };
+          genConfig.thinkingConfig = { thinkingLevel: "minimal" };
         }
 
-        // Retry up to 3 times on the primary model (for temporary 503 spikes)
-        const maxAttempts = modelToCall === 'gemini-3.8-flash' ? 3 : 1;
+        // Try up to 2 attempts on 3.8, 1 attempt on others
+        const maxAttempts = modelToCall === 'gemini-3.8-flash' ? 2 : 1;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          // Per-attempt timeout (25s): never allow a hanging model to freeze the entire session
+          const attemptController = new AbortController();
+          let isAttemptTimeout = false;
+          const attemptTimeoutId = setTimeout(() => {
+            isAttemptTimeout = true;
+            attemptController.abort();
+          }, 25000);
+
+          const onGlobalAbort = () => attemptController.abort();
+          abortController.signal.addEventListener('abort', onGlobalAbort);
+
           try {
             const response = await fetch(url, {
               method: 'POST',
-              signal: abortController.signal,
+              signal: attemptController.signal,
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{
@@ -1136,14 +1148,13 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
             if (isSpike) {
               if (attempt < maxAttempts) {
                 if (loadingText) {
-                  loadingText.innerText = `Server Google molto richiesto, secondo tentativo in corso... (${attempt}/${maxAttempts}) ⏳`;
+                  loadingText.innerText = `Server ${modelToCall} occupato, riprovo tra un attimo... (${attempt}/${maxAttempts}) ⏳`;
                 }
-                // Short wait to allow the Google spike to clear
                 await new Promise(r => setTimeout(r, 2000));
                 continue;
               } else {
                 if (loadingText) {
-                  loadingText.innerText = `Passo al modello alternativo... 🔄`;
+                  loadingText.innerText = `Server ${modelToCall} saturo, passo a un modello più rapido... ⚡`;
                 }
                 break;
               }
@@ -1156,11 +1167,23 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
               break;
             }
           } catch (callErr) {
-            if (callErr.name === 'AbortError') throw callErr;
+            if (abortController.signal.aborted) {
+              throw callErr; // User explicitly cancelled
+            }
+            if (isAttemptTimeout) {
+              console.warn(`[${modelToCall}] Timeout tentativo (>25s), passo al modello successivo...`);
+              if (loadingText) {
+                loadingText.innerText = `Modello ${modelToCall} lento a rispondere, provo un modello più veloce... ⚡`;
+              }
+              break; // Skip to next candidate model!
+            }
             if (callErr.message && callErr.message.includes('non valida')) throw callErr;
             lastErrorMessage = callErr.message || 'Errore di connessione';
             console.warn(`[${modelToCall}] Errore di rete:`, callErr);
             break;
+          } finally {
+            clearTimeout(attemptTimeoutId);
+            abortController.signal.removeEventListener('abort', onGlobalAbort);
           }
         }
       }

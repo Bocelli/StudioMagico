@@ -136,22 +136,26 @@ const extractedText = extractTextFromParts(mockCandidatesWithThinking);
 assert(extractedText.includes('Il Vulcano'), 'Failed to separate thinking part');
 console.log('✓ Gemini 3.8 thinking block separator passed');
 
-// Test G: Failover & Deprecation Resilience Engine
+// Test G: Failover, Timeout & Deprecation Resilience Engine
 async function simulateFailoverEngine(fetchMock, candidateModels) {
   let data = null;
   let lastErrorMessage = '';
   
   modelLoop:
   for (const model of candidateModels) {
-    const maxAttempts = model === 'gemini-3.8-flash' ? 3 : 1;
+    const maxAttempts = model === 'gemini-3.8-flash' ? 2 : 1;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const res = await fetchMock(model, attempt);
       if (res.ok) {
         data = res.data;
         break modelLoop;
       }
+      if (res.timedOut) {
+        // Attempt timeout: skip to next candidate model immediately
+        break;
+      }
       lastErrorMessage = res.errorMessage;
-      const errMsgLower = lastErrorMessage.toLowerCase();
+      const errMsgLower = (lastErrorMessage || '').toLowerCase();
       const isSpike = res.status === 503 || res.status === 429 || errMsgLower.includes('high demand');
       const isDeprecated = res.status === 404 || errMsgLower.includes('no longer available');
 
@@ -172,7 +176,7 @@ async function simulateFailoverEngine(fetchMock, candidateModels) {
 
 (async () => {
   // Case 1: gemini-3.8-flash has a spike on attempt 1, succeeds on attempt 2
-  const candidateModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+  const candidateModels = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
   assert(!candidateModels.includes('gemini-2.0-flash'), 'gemini-2.0-flash must not be in candidate list');
   assert(!candidateModels.includes('gemini-1.5-flash'), 'gemini-1.5-flash must not be in candidate list');
 
@@ -196,6 +200,16 @@ async function simulateFailoverEngine(fetchMock, candidateModels) {
   const res2 = await simulateFailoverEngine(mock2, candidateWithDeprecated);
   assert(res2.data && res2.data.lesson === 'recovered', 'Failed to skip deprecated model to next candidate');
 
-  console.log('✓ Model retry & failover resilience verification passed');
+  // Case 3: Model 1 times out (taking too long), engine immediately falls back to Model 2
+  const mock3 = async (model) => {
+    if (model === 'gemini-3.8-flash') {
+      return { ok: false, timedOut: true };
+    }
+    return { ok: true, data: { lesson: 'recovered_from_timeout', model } };
+  };
+  const res3 = await simulateFailoverEngine(mock3, candidateModels);
+  assert(res3.data && res3.data.lesson === 'recovered_from_timeout' && res3.data.model === 'gemini-3.5-flash-lite', 'Failed to recover from slow model timeout');
+
+  console.log('✓ Model retry, timeout & failover resilience verification passed');
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
