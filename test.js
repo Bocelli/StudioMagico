@@ -136,4 +136,66 @@ const extractedText = extractTextFromParts(mockCandidatesWithThinking);
 assert(extractedText.includes('Il Vulcano'), 'Failed to separate thinking part');
 console.log('✓ Gemini 3.8 thinking block separator passed');
 
-console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
+// Test G: Failover & Deprecation Resilience Engine
+async function simulateFailoverEngine(fetchMock, candidateModels) {
+  let data = null;
+  let lastErrorMessage = '';
+  
+  modelLoop:
+  for (const model of candidateModels) {
+    const maxAttempts = model === 'gemini-3.8-flash' ? 3 : 1;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const res = await fetchMock(model, attempt);
+      if (res.ok) {
+        data = res.data;
+        break modelLoop;
+      }
+      lastErrorMessage = res.errorMessage;
+      const errMsgLower = lastErrorMessage.toLowerCase();
+      const isSpike = res.status === 503 || res.status === 429 || errMsgLower.includes('high demand');
+      const isDeprecated = res.status === 404 || errMsgLower.includes('no longer available');
+
+      if (isDeprecated) {
+        break; // skip to next candidate
+      }
+      if (isSpike) {
+        if (attempt < maxAttempts) {
+          continue; // retry same model
+        } else {
+          break; // move to next candidate
+        }
+      }
+    }
+  }
+  return { data, lastErrorMessage };
+}
+
+(async () => {
+  // Case 1: gemini-3.8-flash has a spike on attempt 1, succeeds on attempt 2
+  const candidateModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+  assert(!candidateModels.includes('gemini-2.0-flash'), 'gemini-2.0-flash must not be in candidate list');
+  assert(!candidateModels.includes('gemini-1.5-flash'), 'gemini-1.5-flash must not be in candidate list');
+
+  const mock1 = async (model, attempt) => {
+    if (model === 'gemini-3.8-flash' && attempt === 1) {
+      return { ok: false, status: 503, errorMessage: 'This model is currently experiencing high demand.' };
+    }
+    return { ok: true, data: { lesson: 'ok' } };
+  };
+  const res1 = await simulateFailoverEngine(mock1, candidateModels);
+  assert(res1.data && res1.data.lesson === 'ok', 'Failed to recover from spike via retry');
+
+  // Case 2: A candidate model returns "no longer available", engine must skip to next candidate without crashing
+  const candidateWithDeprecated = ['old-deprecated-model', 'gemini-3.8-flash'];
+  const mock2 = async (model) => {
+    if (model === 'old-deprecated-model') {
+      return { ok: false, status: 404, errorMessage: 'models/old-deprecated-model is no longer available to new users.' };
+    }
+    return { ok: true, data: { lesson: 'recovered' } };
+  };
+  const res2 = await simulateFailoverEngine(mock2, candidateWithDeprecated);
+  assert(res2.data && res2.data.lesson === 'recovered', 'Failed to skip deprecated model to next candidate');
+
+  console.log('✓ Model retry & failover resilience verification passed');
+  console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
+})();

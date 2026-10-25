@@ -1123,14 +1123,16 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
         text: promptText + (manualText ? `\n\nNote/testo aggiuntivo del libro:\n${manualText}` : '')
       });
 
-      // Candidate models for automatic high-demand failover
-      const candidateModels = ['gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      // Candidate models for automatic failover (Gemini 3 active generation)
+      // Note: gemini-2.0 and gemini-1.5 are permanently shut down by Google for new users
+      const candidateModels = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
       let data = null;
       let lastErrorMessage = '';
       let usedModel = 'gemini-3.8-flash';
 
       const timeoutId = setTimeout(() => abortController.abort(), 120000);
 
+      modelLoop:
       for (const modelToCall of candidateModels) {
         usedModel = modelToCall;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToCall}:generateContent?key=${apiKey}`;
@@ -1139,55 +1141,84 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
           responseMimeType: "application/json",
           temperature: 0.2
         };
-        if (modelToCall.includes('3.8')) {
+        if (modelToCall.includes('3.8') || modelToCall.includes('3.6')) {
           genConfig.thinkingConfig = { thinkingLevel: "low" };
         }
 
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            signal: abortController.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                role: "user",
-                parts: parts
-              }],
-              generationConfig: genConfig
-            })
-          });
+        // Retry up to 3 times on the primary model (for temporary 503 spikes)
+        const maxAttempts = modelToCall === 'gemini-3.8-flash' ? 3 : 1;
 
-          if (response.ok) {
-            data = await response.json();
-            break; // Success!
-          }
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              signal: abortController.signal,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  role: "user",
+                  parts: parts
+                }],
+                generationConfig: genConfig
+              })
+            });
 
-          const errData = await response.json().catch(() => ({}));
-          lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
-          console.warn(`Modello ${modelToCall} non disponibile (${lastErrorMessage}), provo il modello alternativo...`);
-
-          // If the model is experiencing high demand (503 / 429) or spikes, fallback immediately
-          const isOverloaded = response.status === 503 ||
-                               response.status === 429 ||
-                               lastErrorMessage.toLowerCase().includes('high demand') ||
-                               lastErrorMessage.toLowerCase().includes('unavailable') ||
-                               lastErrorMessage.toLowerCase().includes('overloaded');
-
-          if (isOverloaded) {
-            if (loadingText) {
-              loadingText.innerText = `Server ${modelToCall} occupato, provo il modello alternativo... 🔄`;
+            if (response.ok) {
+              data = await response.json();
+              break modelLoop; // Success! Exit outer loop
             }
-            continue; // Try next model immediately!
-          } else {
-            throw new Error(lastErrorMessage);
+
+            const errData = await response.json().catch(() => ({}));
+            lastErrorMessage = errData.error?.message || `Errore HTTP ${response.status}`;
+            console.warn(`[${modelToCall}] Tentativo ${attempt}/${maxAttempts} fallito: ${lastErrorMessage}`);
+
+            const errMsgLower = lastErrorMessage.toLowerCase();
+            const isSpike = response.status === 503 ||
+                            response.status === 429 ||
+                            errMsgLower.includes('high demand') ||
+                            errMsgLower.includes('overloaded') ||
+                            errMsgLower.includes('resource_exhausted') ||
+                            errMsgLower.includes('unavailable');
+
+            const isDeprecatedOrNotFound = response.status === 404 ||
+                                           errMsgLower.includes('not found') ||
+                                           errMsgLower.includes('no longer available') ||
+                                           errMsgLower.includes('deprecated');
+
+            if (isDeprecatedOrNotFound) {
+              // Model is shut down or unavailable for this key, move to next candidate
+              break;
+            }
+
+            if (isSpike) {
+              if (attempt < maxAttempts) {
+                if (loadingText) {
+                  loadingText.innerText = `Server Google molto richiesto, secondo tentativo in corso... (${attempt}/${maxAttempts}) ⏳`;
+                }
+                // Short wait to allow the Google spike to clear
+                await new Promise(r => setTimeout(r, 2000));
+                continue;
+              } else {
+                if (loadingText) {
+                  loadingText.innerText = `Passo al modello alternativo... 🔄`;
+                }
+                break;
+              }
+            } else {
+              // Check for invalid API key
+              if (response.status === 400 && errMsgLower.includes('api_key_invalid')) {
+                throw new Error("Chiave API Google non valida. Controlla la chiave nelle impostazioni.");
+              }
+              // For other non-fatal errors, try next model candidate
+              break;
+            }
+          } catch (callErr) {
+            if (callErr.name === 'AbortError') throw callErr;
+            if (callErr.message && callErr.message.includes('non valida')) throw callErr;
+            lastErrorMessage = callErr.message || 'Errore di connessione';
+            console.warn(`[${modelToCall}] Errore di rete:`, callErr);
+            break;
           }
-        } catch (callErr) {
-          if (callErr.name === 'AbortError') throw callErr;
-          lastErrorMessage = callErr.message;
-          if (lastErrorMessage.toLowerCase().includes('high demand') || lastErrorMessage.toLowerCase().includes('unavailable')) {
-            continue;
-          }
-          throw callErr;
         }
       }
 
