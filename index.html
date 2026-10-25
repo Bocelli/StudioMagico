@@ -55,7 +55,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.6 (Gemini 3 Auto-Retry)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.7 (More Quiz & Flashcards)</span></span>
         </div>
       </div>
 
@@ -161,22 +161,18 @@
       </div>
 
       <!-- TABS NAVIGATION (Big Tactile Buttons for 8-year-old hands) -->
-      <nav class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
-        <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
+      <nav class="grid grid-cols-3 gap-2 sm:gap-4 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
+        <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
           <span>📖</span>
           <span>La Storia</span>
         </button>
-        <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+        <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
           <span>🗂️</span>
           <span>Flashcard</span>
         </button>
-        <button data-tab-target="quiz" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+        <button data-tab-target="quiz" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
           <span>🎯</span>
           <span>Super Quiz</span>
-        </button>
-        <button data-tab-target="curiosita" class="btn-tactile btn-slate py-3 px-3 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
-          <span>💡</span>
-          <span>Curiosità</span>
         </button>
       </nav>
     </section>
@@ -236,13 +232,6 @@
     <!-- TAB 3: SUPER QUIZ (Interactive Gamified Questions) -->
     <section id="tab-quiz" class="hidden space-y-4">
       <div id="quizBox">
-        <!-- Populated by JavaScript -->
-      </div>
-    </section>
-
-    <!-- TAB 4: CURIOSITÀ E SFIDE -->
-    <section id="tab-curiosita" class="hidden space-y-4">
-      <div id="curiositaContent">
         <!-- Populated by JavaScript -->
       </div>
     </section>
@@ -464,7 +453,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <script src="demo-data.js?v=8"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

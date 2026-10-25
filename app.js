@@ -511,10 +511,8 @@ const App = {
       this.setMascotMessage("Tocca le carte per girarle e scoprire i trucchi delle parole chiave! 🗂️");
       this.renderFlashcard();
     } else if (tab === 'quiz') {
-      this.setMascotMessage("Pronto per la sfida a quiz? Guadagna stelline rispondendo alle domande! 🎯");
+      this.setMascotMessage("Pronto per la sfida a quiz? Guadagna tantissime stelline rispondendo alle domande! 🎯");
       this.renderQuizQuestion();
-    } else if (tab === 'curiosita') {
-      this.setMascotMessage("Sapevi queste cose straordinarie? Leggi le curiosità e fai la mini-sfida! 💡");
     }
   },
 
@@ -564,7 +562,6 @@ const App = {
     // Render Flashcards & Quiz
     this.renderFlashcard();
     this.renderQuizQuestion();
-    this.renderCuriosities();
   },
 
   // --- Flashcard Logic ---
@@ -837,56 +834,6 @@ const App = {
     if (modal) modal.classList.add('hidden');
   },
 
-  renderCuriosities() {
-    const container = document.getElementById('curiositaContent');
-    if (!container || !this.currentLesson) return;
-
-    const curiosita = this.currentLesson.curiosita || [];
-    const sfida = this.currentLesson.sfida_veloce || "Racconta a voce alta a mamma o papà quello che hai imparato in soli 30 secondi!";
-
-    container.innerHTML = `
-      <div class="space-y-6">
-        <div class="card-clay p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-          <div class="flex items-center gap-3 mb-4">
-            <span class="text-3xl">🚀</span>
-            <h3 class="text-2xl font-bold text-purple-900 font-heading">Lo Sapevi Che...?</h3>
-          </div>
-          <div class="space-y-3">
-            ${curiosita.map(c => `
-              <div class="p-4 bg-white/90 rounded-2xl border border-purple-100 flex items-start gap-3 shadow-sm">
-                <span class="text-xl">✨</span>
-                <p class="text-slate-800 text-lg font-medium leading-relaxed">${c}</p>
-                <button onclick="App.voice.speak('${c.replace(/'/g, "\\'")}')" class="text-purple-600 hover:text-purple-900 p-1 rounded-lg ml-auto" title="Ascolta">
-                  🔊
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="card-clay p-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="text-3xl">⚡</span>
-            <h3 class="text-2xl font-bold text-emerald-900 font-heading">Mini Sfida di Azione!</h3>
-          </div>
-          <p class="text-emerald-900 text-lg font-semibold bg-white/90 p-4 rounded-2xl border border-emerald-200 mb-4">
-            ${sfida}
-          </p>
-          <button onclick="App.completeChallenge()" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow">
-            🎉 Ho fatto la sfida! (+15 ⭐)
-          </button>
-        </div>
-      </div>
-    `;
-  },
-
-  completeChallenge() {
-    this.addStars(15, 'sfida_fatta');
-    if (window.confetti) {
-      window.confetti({ particleCount: 80, spread: 60 });
-    }
-  },
-
   // --- Saved Lessons & History ---
   renderSavedLessonsList() {
     const list = document.getElementById('demoLessonsList');
@@ -1045,22 +992,23 @@ const App = {
       }, 3000);
 
       const totalPages = this.uploadedImages.length;
-      const targetCount = totalPages > 1 ? Math.min(6, Math.max(4, totalPages * 2)) : 3;
+      // Generous target: at least 5 for 1 page, 7-10 for multi-page
+      const targetCount = totalPages > 1 ? Math.min(10, Math.max(7, totalPages * 4)) : 5;
 
       const promptText = `
 Sei "Leo", il magico tutor di studio per bambini di 3ª elementare (8-9 anni).
-Il tuo compito è spiegare le pagine del libro scolastico in modo chiaro, avventuroso ed entusiasmante.
+Il tuo compito è spiegare le pagine del libro scolastico in modo chiaro, avventuroso ed entusiasmante, preparando una ricca serie di flashcard e quiz per far fare tanta pratica al bambino.
 
 REGOLE FONDAMENTALI SULLE PAGINE:${totalPages > 1 ? `
 - ATTENZIONE CRUCIALE: Sono state caricate ${totalPages} PAGINE CONSECUTIVE del libro (contrassegnate come PAGINA 1, PAGINA 2, ecc.).
 - DEVI SINTETIZZARE ED INCLUDERE OBBLIGATORIAMENTE TUTTE LE ${totalPages} PAGINE! Non fermarti alla prima pagina.
-- La "storia_semplice" DEVE spiegare gli argomenti di TUTTE le pagine in ordine cronologico e logico (dedica almeno 1-2 paragrafi per ciascuna pagina caricata, per un totale di 4-6 paragrafi). Unisci il tutto in un'unica storia avvincente.
-- Le "parole_chiave" DEVONO essere ${targetCount} e distribuite tra tutte le pagine caricate (almeno una/due per ciascuna pagina).
-- Il "quiz" DEVE avere ${targetCount} domande che verifichino la comprensione di TUTTE le pagine (distribuisci le domande equamente tra la prima pagina e le pagine successive).` : `
+- La "storia_semplice" DEVE spiegare gli argomenti di TUTTE le pagine in ordine cronologico e logico (dedica 1-2 paragrafi per ciascuna pagina caricata). Unisci il tutto in un'unica storia avvincente.
+- Le "parole_chiave" (flashcard) DEVONO essere ${targetCount} concetti chiave distribuiti tra tutte le pagine caricate (almeno 3-4 per ciascuna pagina).
+- Il "quiz" DEVE avere ${targetCount} domande a risposta multipla che verifichino la comprensione di TUTTE le pagine (distribuisci le domande equamente tra tutte le pagine).` : `
 - Spiega in modo chiaro e completo il contenuto della pagina caricata.
 - "storia_semplice" in 3-4 paragrafi con linguaggio semplice e metafore quotidiane adatte a 8 anni.
-- 3 parole chiave essenziali con emoji e spiegazione amichevole.
-- 3 domande quiz a scelta multipla con indizio per chi sbaglia.`}
+- Le "parole_chiave" (flashcard) DEVONO essere ${targetCount} concetti chiave importanti con emoji simpatica e spiegazione adatta a 8 anni.
+- Il "quiz" DEVE avere ${targetCount} domande a risposta multipla con 3 opzioni e un aiutino giocoso per chi sbaglia.`}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
@@ -1081,12 +1029,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       "risposta_corretta": 0,
       "indizio": "Un aiutino giocoso per chi sbaglia."
     }
-  ],
-  "curiosita": [
-    "Fatto curioso 1",
-    "Fatto curioso 2"
-  ],
-  "sfida_veloce": "Mini sfida attiva da fare subito in 30 secondi!"
+  ]
 }
 `;
 
