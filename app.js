@@ -511,7 +511,7 @@ const App = {
 
     // Context reactions
     if (tab === 'storia') {
-      this.setMascotMessage("Ecco il riassunto strutturato della lezione! Puoi leggerlo o cliccare 'Ascolta' per farlo leggere a voce alta! 📖");
+      this.setMascotMessage("Ecco la spiegazione continua e scorrevole della lezione! Puoi leggerla o cliccare 'Ascolta' per farla leggere ad alta voce! 📖");
     } else if (tab === 'flashcard') {
       this.setMascotMessage("Tocca le carte per girarle e scoprire i trucchi delle parole chiave! 🗂️");
       this.renderFlashcard();
@@ -551,7 +551,7 @@ const App = {
         const listItemsHtml = listLines.map(line => {
           let itemText = line.replace(/^[-*•]\s+/, '').trim();
           if (!itemText) return '';
-          itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1 py-0.5 rounded">$1</strong>');
+          itemText = itemText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1.5 py-0.5 rounded">$1</strong>');
           return `
             <li class="flex items-start gap-3 text-slate-700 text-lg md:text-xl font-medium leading-relaxed my-2">
               <span class="text-blue-600 font-extrabold text-2xl leading-none select-none mt-0.5">•</span>
@@ -571,14 +571,14 @@ const App = {
 
         if (lines.length > 1) {
           const bodyText = lines.slice(1).join(' ').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold">$1</strong>');
-          return `${headerHtml}<p class="leading-relaxed text-slate-700 text-lg md:text-xl font-medium mb-4">${bodyText}</p>`;
+          return `${headerHtml}<p class="leading-relaxed text-slate-800 text-lg md:text-xl font-medium mb-5">${bodyText}</p>`;
         }
         return headerHtml;
       }
 
-      // Normal paragraph
-      const formatted = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold">$1</strong>');
-      return `<p class="leading-relaxed text-slate-700 text-lg md:text-xl font-medium mb-4">${formatted}</p>`;
+      // Normal continuous flowing narrative paragraph with bold keywords and child-friendly typography
+      const formatted = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-950 font-bold bg-indigo-50/70 px-1.5 py-0.5 rounded">$1</strong>');
+      return `<p class="leading-relaxed text-slate-800 text-lg md:text-xl font-medium mb-5">${formatted}</p>`;
     }).join('');
   },
 
@@ -1045,7 +1045,7 @@ const App = {
 
       const loadingSteps = [
         `Lettura in corso delle ${this.uploadedImages.length > 1 ? this.uploadedImages.length + ' pagine' : 'pagine'} del libro... 📖`,
-        "Estrazione dei concetti e creazione del riassunto strutturato... ✏️",
+        "Scrittura della spiegazione continua e scorrevole per il bambino... ✏️",
         "Generazione delle flashcard didattiche... 🗂️",
         "Creazione del Super Quiz per la verifica... 🎯 (ancora pochi istanti!)"
       ];
@@ -1060,25 +1060,26 @@ const App = {
       const targetCount = totalPages > 1 ? Math.min(10, Math.max(7, totalPages * 4)) : 5;
 
       const promptText = `
-Sei un docente esperto nella didattica per la scuola primaria (3ª elementare, bambini di 8-9 anni).
-Il tuo compito è creare un RIASSUNTO COMPLETO, STRUTTURATO E CHIARO delle pagine caricate, insieme a una serie ricca di flashcard e quiz per lo studio autonomo del bambino.
+Sei un autore esperto di testi divulgativi e scolastici per bambini di 3ª elementare (8-9 anni).
+Il tuo obiettivo è spiegare tutti i contenuti delle pagine caricate con una SPIEGAZIONE OMOGENEA, CONTINUA E SCORREVOLE, piacevole da leggere come un bel racconto informativo per ragazzi, insieme a flashcard e quiz per consolidare lo studio.
 
-REGOLE FONDAMENTALI SULLO STILE (DIVIETO ASSOLUTO DI STORYTELLING INFANTILE O ROLEPLAY):
-- NON usare formule da fiaba o da cartone animato: NIENTE "C'era una volta", NIENTE "Ciao esploratore", NIENTE "Sono Leo il tuo tutor magico", NIENTE "Oggi ti porto in un viaggio fantastico".
-- NON inserire commenti metanarrativi tipo "Ma l'avventura continua nella pagina successiva" o "Insieme formano una super squadra magica".
-- SCRIVI CON UNO STILE DIDATTICO, CHIARO, DIRETTO E COMPLETO in terza persona: spiega subito e con precisione i fatti, i concetti e le definizioni del testo, con frasi scorrevoli e lessico semplice adatto a un bambino di 8 anni.
+REGOLE FONDAMENTALI SULLA STRUTTURA DEL TESTO (campo "riassunto"):
+1. TESTO CONTINUO E UNITARIO (SENZA SCHEMI STEP-BY-STEP O ELENCHI):
+   - Scrivi una narrazione fluida e continua suddivisa in 3-5 paragrafi ben spaziati (usa doppi a capo \\n\\n tra un paragrafo e l'altro).
+   - NON usare elenchi puntati (niente trattini -, niente pallini •).
+   - NON usare titoli o etichette rigide a sezioni (NIENTE "📌 INTRODUZIONE", NIENTE "🔍 PUNTI PRINCIPALI", NIENTE "💡 IN SINTESI", NIENTE "Step 1/2").
+   - I paragrafi devono scorrere in modo armonioso dall'inizio alla fine, collegando tutte le nozioni, le figure e le scoperte in una spiegazione omogenea e appassionante.
 
-STRUTTURA OBBLIGATORIA DEL RIASSUNTO (campo "riassunto"):
-Il riassunto DEVE spiegare TUTTO il contenuto delle pagine caricate (non tralasciare definizioni, mestieri, fasi o scoperte) ed essere organizzato in 3 parti distinte usando doppi a capo (\\n\\n):
-1. 📌 INTRODUZIONE: 2-3 frasi chiare che presentano subito il tema centrale della lezione.
-2. 🔍 I PUNTI PRINCIPALI: un elenco puntato dettagliato (usando trattini - all'inizio di ogni riga) in cui ogni concetto o figura chiave viene spiegato con parole semplici ed evidenziato in **grassetto**.
-   Esempio:
-   - **Il fotografo**: scatta foto agli ambienti per documentare i cambiamenti nel tempo.
-   - **Il cartografo**: disegna le carte geografiche usando mappe e satelliti.
-   - **Il geologo**: studia le rocce e il suolo e aiuta a prevenire frane e pericoli.
-3. 💡 IN SINTESI: 2-3 frasi conclusive che riassumono l'importanza di quanto studiato.
+2. COMPLETEZZA SULLE PAGINE:
+   - Spiega con cura e precisione TUTTI i concetti, i mestieri, le definizioni o le fasi presenti nelle pagine caricate, integrando tutto nel testo senza tralasciare nulla.
+   - Evidenzia le parole chiave fondamentali in **grassetto** direttamente all'interno delle frasi per facilitare la memoria visiva del bambino.
 
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine consecutive. Il riassunto, le ${targetCount} flashcard e i ${targetCount} quiz DEVONO coprire ed estrarre concetti da TUTTE le ${totalPages} pagine caricate, dedicando attenzione a ogni argomento!` : ''}
+3. STILE ADATTO A UN BAMBINO DI 8 ANNI (SENZA FORZATURE INFANTILI):
+   - Usa un lessico chiaro, semplice e coinvolgente, con frasi brevi e ritmo piacevole.
+   - NON usare formule finte o roleplay infantile (NIENTE "Ciao sono Leo", NIENTE "Ciao piccolo esploratore", NIENTE "C'era una volta", NIENTE "Ma l'avventura continua nella pagina successiva").
+   - Il tono deve essere caldo, istruttivo e limpido, come nei migliori libri di lettura per ragazzi.
+
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine consecutive. Il testo deve unire ed esporre TUTTE le ${totalPages} pagine in un unico racconto logico e continuativo, e le ${targetCount} flashcard e ${targetCount} quiz devono verificare tutte le pagine!` : ''}
 
 REQUISITI PER FLASHCARD E QUIZ:
 - "parole_chiave": ${targetCount} flashcard con termine, emoji adatta e spiegazione semplice in 1 o 2 frasi.
@@ -1088,7 +1089,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
   "titolo": "Titolo chiaro e corretto della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "riassunto": "📌 INTRODUZIONE:\\n...\\n\\n🔍 I PUNTI PRINCIPALI:\\n- **Concetto 1**: spiegazione...\\n- **Concetto 2**: spiegazione...\\n\\n💡 IN SINTESI:\\n...",
+  "riassunto": "Primo paragrafo continuo che introduce l'argomento e i concetti chiave con **termini in grassetto**...\\n\\nSecondo paragrafo continuo che prosegue la spiegazione collegando gli elementi in modo naturale...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude con una riflessione chiara...",
   "parole_chiave": [
     {
       "termine": "Concetto chiave",
@@ -1304,7 +1305,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       this.loadLesson(parsedLesson);
       this.renderSavedLessonsList();
       this.switchTab('storia');
-      this.setMascotMessage("Evviva! Ho preparato il riassunto completo, le flashcard e i quiz per questa lezione! 🚀", true);
+      this.setMascotMessage("Evviva! Ho preparato la spiegazione della lezione, le flashcard e i quiz! 🚀", true);
 
     } catch (err) {
       this.sound.hint();

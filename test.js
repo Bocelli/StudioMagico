@@ -264,5 +264,18 @@ Tutti gli scienziati collaborano insieme.`;
   assert(formattedHtml.includes('<strong>Il fotografo</strong>'), 'Bold tag missing in formatted list');
   console.log('✓ Structured Summary markdown & bullet points formatter passed');
 
+  const sampleContinuousNarrative = `La geografia è la scienza che descrive e studia la Terra. Il **geografo** non lavora da solo, ma collabora con molti esperti.
+
+Per osservare come cambia il paesaggio nel tempo, interviene **il fotografo**, che scatta immagini da confrontare. Per le piante, invece, c'è **il botanico**.
+
+Infine, **il cartografo** disegna le mappe e **il geologo** studia le rocce per proteggerci.`;
+
+  const formattedNarrative = formatSummaryTest(sampleContinuousNarrative);
+  assert(formattedNarrative.includes('<p>La geografia'), 'First paragraph missing');
+  assert(formattedNarrative.includes('<strong>geografo</strong>'), 'Bold tag missing in narrative');
+  assert(formattedNarrative.includes('<p>Per osservare'), 'Second paragraph missing');
+  assert(formattedNarrative.includes('<p>Infine,'), 'Third paragraph missing');
+  console.log('✓ Continuous flowing narrative formatter passed');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

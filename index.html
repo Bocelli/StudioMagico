@@ -55,7 +55,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v1.9 (Structured Summary)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v2.0 (Flowing Narrative Summary)</span></span>
         </div>
       </div>
 
@@ -164,7 +164,7 @@
       <nav class="grid grid-cols-3 gap-2 sm:gap-4 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
         <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
           <span>📖</span>
-          <span>Il Riassunto</span>
+          <span>La Spiegazione</span>
         </button>
         <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
           <span>🗂️</span>
@@ -177,34 +177,34 @@
       </nav>
     </section>
 
-    <!-- TAB 1: IL RIASSUNTO STRUTTURATO (Chiaro e ben organizzato per la 3ª elementare) -->
+    <!-- TAB 1: LA SPIEGAZIONE FLUIDA (Testo continuo, omogeneo e scorrevole per la 3ª elementare) -->
     <section id="tab-storia" class="space-y-4">
       <div class="card-clay p-6 sm:p-8 bg-white border-blue-200">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
           <div>
-            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Guida allo Studio</span>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Lettura Chiara e Continua</span>
             <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-              Il Riassunto della Lezione
+              Il Racconto della Lezione
             </h3>
           </div>
           <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
             <span>🔊</span>
-            <span>Ascolta il Riassunto</span>
+            <span>Ascolta la Spiegazione</span>
           </button>
         </div>
 
-        <!-- Summary Paragraphs / Formatted Content -->
+        <!-- Flowing Explanation Content -->
         <article id="storyContent" class="space-y-4 max-w-none">
           <!-- Populated by JavaScript -->
         </article>
 
         <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
           <p class="text-sm font-semibold text-slate-500">
-            💡 Suggerimento: Dopo aver letto o ascoltato il riassunto, prova le Flashcard per fissare i concetti chiave!
+            💡 Suggerimento: Dopo aver letto o ascoltato la spiegazione, passa alle Flashcard per fissare i concetti!
           </p>
           <button id="markReadBtn" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow">
             <span>⭐</span>
-            <span>Ho letto il riassunto! (+20 ⭐)</span>
+            <span>Ho letto la spiegazione! (+20 ⭐)</span>
           </button>
         </div>
       </div>
@@ -453,7 +453,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="demo-data.js?v=11"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
