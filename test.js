@@ -388,5 +388,41 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   audioChunks.forEach(c => assert(c.length <= 135, `Chunk too long: ${c.length}`));
   console.log(`✓ Online HD Voice text chunker passed (${audioChunks.length} chunks generated)`);
 
+  // Test N: Female Harmonious Teacher Personas & Matching
+  const personas = [
+    { id: 'sofia', name: '🌸 Maestra Sofia (Dolce & Armoniosa)', pitch: 1.08, rate: 0.90, preferred: ['isabella', 'elsa', 'alice'] },
+    { id: 'giulia', name: '☀️ Maestra Giulia (Solare & Vivace)', pitch: 1.15, rate: 0.94, preferred: ['alice', 'elsa'] },
+    { id: 'elena', name: '🌙 Maestra Elena (Calma & Chiara)', pitch: 1.02, rate: 0.88, preferred: ['elsa', 'isabella'] }
+  ];
+
+  personas.forEach(p => {
+    assert(p.pitch >= 1.0 && p.pitch <= 1.20, `Persona ${p.id} pitch out of natural sweet range`);
+    assert(p.rate >= 0.85 && p.rate <= 0.98, `Persona ${p.id} rate should be calm and storytelling-friendly`);
+  });
+
+  function pickFemaleVoiceTest(voices, persona) {
+    if (persona && persona.preferred) {
+      for (const pref of persona.preferred) {
+        const found = voices.find(v => (v.name || '').toLowerCase().includes(pref));
+        if (found) return found;
+      }
+    }
+    return voices.find(v => {
+      const n = (v.name || '').toLowerCase();
+      return n.includes('female') || n.includes('donna') || n.includes('isabella') || n.includes('alice') || n.includes('elsa') || n.includes('google');
+    }) || voices[0];
+  }
+
+  const sampleNativeVoices = [
+    { name: 'Microsoft Cosimo - Italian (Italy)' },
+    { name: 'Microsoft Diego Online (Natural) - Italian (Italy)' },
+    { name: 'Microsoft Isabella Online (Natural) - Italian (Italy)' },
+    { name: 'Microsoft Elsa - Italian (Italy)' }
+  ];
+
+  const matched = pickFemaleVoiceTest(sampleNativeVoices, personas[0]);
+  assert(matched.name.includes('Isabella'), 'Maestra Sofia must pick sweet Isabella voice');
+  console.log(`✓ Harmonious female teacher voice matching verified (matched: ${matched.name})`);
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

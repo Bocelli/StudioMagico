@@ -75,9 +75,11 @@ class VoiceNarrator {
   constructor() {
     this.synth = window.speechSynthesis || null;
     this.nativeVoices = [];
-    this.selectedVoiceId = localStorage.getItem('studio_magico_voice_id') || 'online-hd';
+    // Default to the warm, sweet female voice "sofia"
+    const savedId = localStorage.getItem('studio_magico_voice_id');
+    this.selectedVoiceId = (savedId && savedId !== 'online-hd') ? savedId : 'sofia';
     this.isSpeaking = false;
-    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.95');
+    this.speechRate = parseFloat(localStorage.getItem('studio_magico_voice_rate') || '0.90');
     this.onEndCallback = null;
     this.audioElement = null;
     this.keepAliveTimer = null;
@@ -86,7 +88,7 @@ class VoiceNarrator {
     const savedName = (localStorage.getItem('studio_magico_voice_name') || '').toLowerCase();
     if (savedName.includes('cosimo') || (savedName.includes('desktop') && !savedName.includes('natural')) || savedName.includes('sapi')) {
       localStorage.removeItem('studio_magico_voice_name');
-      this.selectedVoiceId = 'online-hd';
+      this.selectedVoiceId = 'sofia';
     }
 
     if (this.synth) {
@@ -95,6 +97,43 @@ class VoiceNarrator {
         speechSynthesis.onvoiceschanged = () => this.loadVoices();
       }
     }
+  }
+
+  getPersonas() {
+    return [
+      {
+        id: 'sofia',
+        name: '🌸 Maestra Sofia (Dolce & Armoniosa ⭐)',
+        description: 'Voce femminile calda, dolce e rilassante',
+        pitch: 1.08,
+        rate: 0.90,
+        preferred: ['isabella', 'elsa', 'alice', 'federica', 'google']
+      },
+      {
+        id: 'giulia',
+        name: '☀️ Maestra Giulia (Solare & Vivace ⭐)',
+        description: 'Voce femminile allegra, chiara ed entusiasta',
+        pitch: 1.15,
+        rate: 0.94,
+        preferred: ['alice', 'elsa', 'federica', 'google']
+      },
+      {
+        id: 'elena',
+        name: '🌙 Maestra Elena (Calma & Chiara ⭐)',
+        description: 'Voce femminile morbida, lenta e scandita',
+        pitch: 1.02,
+        rate: 0.88,
+        preferred: ['elsa', 'isabella', 'alice', 'google']
+      },
+      {
+        id: 'online-hd',
+        name: '🌐 Voce Online Web (Standard)',
+        description: 'Voce online da server',
+        isOnline: true,
+        pitch: 1.05,
+        rate: 0.92
+      }
+    ];
   }
 
   loadVoices() {
@@ -109,60 +148,46 @@ class VoiceNarrator {
       return lang.startsWith('it');
     });
 
-    // Score native voices:
-    // Natural / Online Neural = 1000
-    // Google online / WaveNet = 900
-    // Apple Enhanced / Siri = 800
-    // Network / Android cloud = 700
-    // Legacy offline desktop robot voices (Cosimo, desktop SAPI) = -1000 (rejected)
+    // Score native voices, strictly prioritizing Italian female neural voices
     const scoreVoice = (v) => {
       const name = (v.name || '').toLowerCase();
-      if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi')) {
+      if (name.includes('cosimo') || (name.includes('desktop') && !name.includes('natural')) || name.includes('sapi') || name.includes('male') || name.includes('uomo')) {
         return -1000;
       }
-      if (name.includes('natural') || name.includes('online')) return 1000;
-      if (name.includes('neural')) return 950;
-      if (name.includes('google')) return 900;
-      if (name.includes('enhanced') || name.includes('premium') || name.includes('siri')) return 800;
-      if (name.includes('network')) return 700;
-      if (name.includes('alice') || name.includes('federica') || name.includes('luca') || name.includes('isabella')) return 600;
+      if (name.includes('isabella')) return 1000; // Ultra-melodious Italian female
+      if (name.includes('natural') || name.includes('online')) return 950;
+      if (name.includes('neural')) return 900;
+      if (name.includes('alice') || name.includes('federica')) return 850;
+      if (name.includes('elsa')) return 800;
+      if (name.includes('google')) return 750;
+      if (name.includes('female') || name.includes('donna')) return 700;
       if (v.localService === false) return 500;
       return 100;
     };
 
     this.nativeVoices = italianRaw.sort((a, b) => scoreVoice(b) - scoreVoice(a));
 
-    // Master list: Online HD Voice is always available and guaranteed human-sounding
-    const voiceList = [
-      {
-        id: 'online-hd',
-        name: 'Google Voce Online HD ⭐ (Molto Naturale)',
-        isOnline: true,
-        highQuality: true
-      }
-    ];
+    const personas = this.getPersonas();
+    const voiceList = [...personas];
 
+    // Add any detected Italian device voices
     this.nativeVoices.forEach((v) => {
       const score = scoreVoice(v);
-      const isHQ = score >= 600;
-      voiceList.push({
-        id: 'native:' + v.name,
-        name: v.name + (isHQ ? ' ⭐ (Naturale)' : ''),
-        isOnline: false,
-        highQuality: isHQ,
-        rawVoice: v
-      });
+      if (score > 0) {
+        voiceList.push({
+          id: 'native:' + v.name,
+          name: '🎙️ ' + v.name + (score >= 700 ? ' ⭐' : ''),
+          isOnline: false,
+          rawVoice: v,
+          pitch: 1.08,
+          rate: 0.90
+        });
+      }
     });
 
-    // Check if currently selected voice exists
     const found = voiceList.find(v => v.id === this.selectedVoiceId);
     if (!found) {
-      const topNative = voiceList.find(v => !v.isOnline && v.highQuality);
-      if (topNative) {
-        this.selectedVoiceId = topNative.id;
-      } else {
-        this.selectedVoiceId = 'online-hd';
-      }
+      this.selectedVoiceId = 'sofia';
     }
 
     return voiceList;
@@ -176,6 +201,25 @@ class VoiceNarrator {
   setVoice(voiceId) {
     this.selectedVoiceId = voiceId;
     localStorage.setItem('studio_magico_voice_id', voiceId);
+  }
+
+  pickFemaleVoiceForPersona(persona) {
+    if (!this.nativeVoices || this.nativeVoices.length === 0) return null;
+
+    if (persona && persona.preferred) {
+      for (const pref of persona.preferred) {
+        const found = this.nativeVoices.find(v => (v.name || '').toLowerCase().includes(pref));
+        if (found) return found;
+      }
+    }
+
+    // Generic female filter
+    const female = this.nativeVoices.find(v => {
+      const n = (v.name || '').toLowerCase();
+      return n.includes('female') || n.includes('donna') || n.includes('isabella') || n.includes('alice') || n.includes('elsa') || n.includes('google');
+    });
+
+    return female || this.nativeVoices[0];
   }
 
   speak(text, onStart, onEnd) {
@@ -261,7 +305,7 @@ class VoiceNarrator {
 
       const audio = new Audio();
       audio.referrerPolicy = 'no-referrer';
-      audio.playbackRate = this.speechRate || 1.0;
+      audio.playbackRate = this.speechRate || 0.94;
       this.audioElement = audio;
 
       audio.onended = () => {
@@ -290,8 +334,7 @@ class VoiceNarrator {
 
       audio.onerror = handleFailure;
       audio.src = primaryUrl;
-      audio.play().catch((e) => {
-        console.warn("Primary audio play blocked or error:", e);
+      audio.play().catch(() => {
         handleFailure();
       });
     };
@@ -307,13 +350,13 @@ class VoiceNarrator {
 
     if (onStart) onStart();
 
-    // Split text into airy paragraphs (not individual sentences!) to ensure melodic prosody
+    // Split text into airy paragraphs for continuous melodious intonation
     const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
     const parts = paragraphs.length > 0 ? paragraphs : [text];
 
     let pIdx = 0;
 
-    // Chrome keep-alive: prevents speech synthesis 15-second cutoff
+    // Chrome keep-alive
     if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
     this.keepAliveTimer = setInterval(() => {
       if (this.synth && this.synth.speaking) {
@@ -323,6 +366,9 @@ class VoiceNarrator {
         clearInterval(this.keepAliveTimer);
       }
     }, 10000);
+
+    const persona = voiceObj || this.getPersona('sofia');
+    const matchedVoice = voiceObj?.rawVoice || this.pickFemaleVoiceForPersona(persona);
 
     const speakNextParagraph = () => {
       if (!this.isSpeaking || pIdx >= parts.length) {
@@ -335,17 +381,16 @@ class VoiceNarrator {
       const para = parts[pIdx++];
       const utterance = new SpeechSynthesisUtterance(para);
       utterance.lang = 'it-IT';
-      utterance.rate = this.speechRate;
-      utterance.pitch = 1.0;
+      // Harmonious feminine pitch and gentle relaxed tempo
+      utterance.pitch = persona.pitch || 1.08;
+      utterance.rate = persona.rate || this.speechRate || 0.90;
 
-      if (voiceObj && voiceObj.rawVoice) {
-        utterance.voice = voiceObj.rawVoice;
-      } else if (this.nativeVoices.length > 0) {
-        utterance.voice = this.nativeVoices[0];
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
       }
 
       utterance.onend = () => {
-        setTimeout(speakNextParagraph, 150);
+        setTimeout(speakNextParagraph, 160);
       };
 
       utterance.onerror = (e) => {
@@ -542,12 +587,32 @@ const App = {
       quickVoiceSelect.addEventListener('change', (e) => onVoiceChanged(e.target.value));
     }
 
+    const previewQuickVoiceBtn = document.getElementById('previewQuickVoiceBtn');
+    if (previewQuickVoiceBtn) {
+      previewQuickVoiceBtn.addEventListener('click', () => {
+        if (this.voice.isSpeaking) {
+          this.voice.stop();
+          previewQuickVoiceBtn.innerHTML = '<span>▶️</span><span class="hidden sm:inline">Prova</span>';
+          return;
+        }
+
+        previewQuickVoiceBtn.innerHTML = '<span>🔊</span><span class="hidden sm:inline">Ascolto...</span>';
+        this.voice.speak(
+          "Ciao! Ti leggerò il racconto con questa voce dolce e armoniosa.",
+          () => {},
+          () => {
+            previewQuickVoiceBtn.innerHTML = '<span>▶️</span><span class="hidden sm:inline">Prova</span>';
+          }
+        );
+      });
+    }
+
     const voiceSelectInput = document.getElementById('voiceSelectInput');
     if (voiceSelectInput) {
       voiceSelectInput.addEventListener('change', (e) => onVoiceChanged(e.target.value));
     }
 
-    // Test Voice Button
+    // Test Voice Button in Settings Modal
     const testVoiceBtn = document.getElementById('testVoiceBtn');
     if (testVoiceBtn) {
       testVoiceBtn.addEventListener('click', () => {
@@ -558,7 +623,7 @@ const App = {
 
         testVoiceBtn.innerHTML = '<span>🔊</span><span>Ascolto...</span>';
         this.voice.speak(
-          "Ciao! Leggerò la spiegazione del libro in modo chiaro, naturale e tranquillo.",
+          "Ciao! Ti leggerò il racconto con questa voce dolce e armoniosa.",
           () => {},
           () => {
             testVoiceBtn.innerHTML = '<span>▶️</span><span>Prova Voce</span>';

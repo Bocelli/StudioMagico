@@ -56,7 +56,7 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v2.5 (Voce Online HD Garantita & Racconto Unico)</span></span>
+          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v2.6 (Voci Femminili Armoniose & Prova al Volo)</span></span>
         </div>
       </div>
 
@@ -193,10 +193,16 @@
             <!-- Quick Voice Selector -->
             <div class="flex items-center gap-1.5 bg-slate-100/90 border-2 border-slate-200 px-3 py-1.5 rounded-2xl shadow-xs" title="Scegli la voce che preferisci">
               <span class="text-sm">🎙️</span>
-              <select id="quickVoiceSelect" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer max-w-[160px] sm:max-w-[210px] truncate">
+              <select id="quickVoiceSelect" class="bg-transparent text-xs font-bold text-slate-800 outline-none cursor-pointer max-w-[170px] sm:max-w-[230px] truncate">
                 <option value="">Rilevamento voci...</option>
               </select>
             </div>
+
+            <!-- Quick Voice Preview Button -->
+            <button id="previewQuickVoiceBtn" type="button" class="btn-tactile btn-slate px-2.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1 text-slate-700 shadow-xs" title="Ascolta un breve assaggio di questa voce">
+              <span>▶️</span>
+              <span class="hidden sm:inline">Prova</span>
+            </button>
 
             <!-- Listen Button -->
             <button id="listenStoryBtn" class="btn-tactile btn-amber px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow-md">
@@ -498,7 +504,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=16"></script>
-  <script src="app.js?v=16"></script>
+  <script src="demo-data.js?v=17"></script>
+  <script src="app.js?v=17"></script>
 </body>
 </html>
