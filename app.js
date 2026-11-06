@@ -165,6 +165,7 @@ const App = {
   selectedGrade: '3-elem',
   currentLesson: null,
   activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz'
+  drawerFilter: 'active', // 'active' | 'archived'
   uploadedImages: [], // Array of { id, dataUrl, mimeType, base64, name }
   currentCardIndex: 0,
   currentQuizIndex: 0,
@@ -187,9 +188,12 @@ const App = {
     this.renderHeaderStats();
     this.bindEvents();
 
-    // Load first available lesson (custom or demo) so the app is immediately alive!
-    const all = this.getAllLessons();
-    if (all.length > 0) {
+    // Load first available active lesson (or fallback to any lesson) so the app is immediately alive!
+    const activeLessons = this.getAllLessons(false);
+    const all = this.getAllLessons(true);
+    if (activeLessons.length > 0) {
+      this.loadLesson(activeLessons[0]);
+    } else if (all.length > 0) {
       this.loadLesson(all[0]);
     } else if (window.DEMO_LESSONS && window.DEMO_LESSONS.length > 0) {
       this.loadLesson(window.DEMO_LESSONS[0]);
@@ -717,6 +721,9 @@ const App = {
       }
     }
 
+    // Update current lesson archive button state
+    this.updateCurrentLessonArchiveBtn();
+
     // Render Flashcards & Quiz
     this.renderFlashcard();
     this.renderQuizQuestion();
@@ -1022,7 +1029,19 @@ const App = {
   },
 
   // --- Saved Lessons, Memory & History Management ---
-  getAllLessons() {
+  getArchivedLessonIds() {
+    try {
+      return JSON.parse(localStorage.getItem('studio_magico_archived_lessons') || '[]');
+    } catch (e) {
+      return [];
+    }
+  },
+
+  isLessonArchived(id) {
+    return this.getArchivedLessonIds().includes(id);
+  },
+
+  getAllLessons(includeArchived = true) {
     let saved = [];
     try {
       saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
@@ -1038,16 +1057,85 @@ const App = {
     }
 
     const visibleDemos = (window.DEMO_LESSONS || []).filter(d => !hiddenDemos.includes(d.id));
+    const all = [...saved, ...visibleDemos];
 
-    // Custom user lessons first (most recent first), then default demo lessons
-    return [...saved, ...visibleDemos];
+    if (includeArchived) return all;
+
+    const archivedIds = this.getArchivedLessonIds();
+    return all.filter(l => !archivedIds.includes(l.id));
+  },
+
+  setDrawerFilter(filter) {
+    this.sound.pop();
+    this.drawerFilter = filter;
+    this.renderSavedLessonsList();
+  },
+
+  archiveLesson(id) {
+    this.sound.pop();
+    let archived = this.getArchivedLessonIds();
+    if (!archived.includes(id)) {
+      archived.push(id);
+      localStorage.setItem('studio_magico_archived_lessons', JSON.stringify(archived));
+    }
+    const all = this.getAllLessons(true);
+    const target = all.find(l => l.id === id);
+    const title = target ? target.titolo : 'Lezione';
+    this.setMascotMessage(`"${title}" archiviata! La ritrovi sempre nella sezione Archivio per ripassarla quando vuoi 📦`, true);
+    this.renderSavedLessonsList();
+    this.updateCurrentLessonArchiveBtn();
+  },
+
+  unarchiveLesson(id) {
+    this.sound.pop();
+    let archived = this.getArchivedLessonIds();
+    archived = archived.filter(item => item !== id);
+    localStorage.setItem('studio_magico_archived_lessons', JSON.stringify(archived));
+    const all = this.getAllLessons(true);
+    const target = all.find(l => l.id === id);
+    const title = target ? target.titolo : 'Lezione';
+    this.setMascotMessage(`"${title}" riportata tra le lezioni attive in studio! 🚀`, true);
+    this.renderSavedLessonsList();
+    this.updateCurrentLessonArchiveBtn();
+  },
+
+  toggleArchiveCurrentLesson() {
+    if (!this.currentLesson || !this.currentLesson.id) return;
+    const id = this.currentLesson.id;
+    if (this.isLessonArchived(id)) {
+      this.unarchiveLesson(id);
+    } else {
+      this.archiveLesson(id);
+    }
+  },
+
+  updateCurrentLessonArchiveBtn() {
+    const btn = document.getElementById('archiveCurrentLessonBtn');
+    if (!btn || !this.currentLesson) return;
+    const isArchived = this.isLessonArchived(this.currentLesson.id);
+    if (isArchived) {
+      btn.innerHTML = '<span>📥</span><span class="hidden xs:inline">Dall\'Archivio</span><span class="xs:hidden">Ripristina</span>';
+      btn.className = 'btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
+      btn.title = "Questa lezione è archiviata. Clicca per riportarla tra le lezioni attive in studio";
+    } else {
+      btn.innerHTML = '<span>📦</span><span class="hidden xs:inline">Archivia</span>';
+      btn.className = 'btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
+      btn.title = "Archivia questa lezione per rileggerla più avanti senza averla tra le lezioni attive";
+    }
   },
 
   renderSavedLessonsList() {
     const list = document.getElementById('demoLessonsList');
     if (!list) return;
 
-    const allLessons = this.getAllLessons();
+    const allLessons = this.getAllLessons(true);
+    const archivedIds = this.getArchivedLessonIds();
+
+    const activeLessons = allLessons.filter(l => !archivedIds.includes(l.id));
+    const archivedLessons = allLessons.filter(l => archivedIds.includes(l.id));
+
+    const currentFilter = this.drawerFilter || 'active';
+    const displayedLessons = currentFilter === 'archived' ? archivedLessons : activeLessons;
 
     let hiddenDemos = [];
     try {
@@ -1056,58 +1144,127 @@ const App = {
       hiddenDemos = [];
     }
 
-    if (allLessons.length === 0) {
-      list.innerHTML = `
-        <div class="col-span-full p-6 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
-          <p class="text-slate-500 font-bold mb-3">Nessuna lezione salvata nella memoria.</p>
-          <button onclick="App.restoreDemoLessons()" class="btn-tactile btn-blue text-xs font-bold px-4 py-2 rounded-xl text-white">
-            🔄 Ripristina lezioni demo di base
+    let filterBar = `
+      <div class="flex items-center justify-between mb-3.5 flex-wrap gap-2 pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button onclick="App.setDrawerFilter('active')" 
+                  class="btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${currentFilter === 'active' ? 'btn-blue text-white shadow-xs' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'}">
+            <span>📚</span>
+            <span>In Studio (${activeLessons.length})</span>
+          </button>
+          <button onclick="App.setDrawerFilter('archived')" 
+                  class="btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${currentFilter === 'archived' ? 'btn-amber text-amber-950 shadow-xs' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'}">
+            <span>📦</span>
+            <span>Archivio (${archivedLessons.length})</span>
           </button>
         </div>
-      `;
-      return;
-    }
+        <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-1">
+          <span>Chiudi</span>
+          <span>✕</span>
+        </button>
+      </div>
+    `;
 
-    let html = allLessons.map(l => {
-      const isCurrent = this.currentLesson && this.currentLesson.id === l.id;
-      const isCustom = l.id && l.id.toString().startsWith('custom-');
-      const isRead = this.stats && this.stats.readLessons && this.stats.readLessons.includes(l.id);
-      const icon = l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚';
-
-      return `
-        <div onclick="App.loadLessonById('${l.id}')" 
-             class="card-clay p-3 sm:p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between gap-2 transition-all ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/50 shadow-sm' : 'bg-white'}">
-          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-            <span class="text-2xl sm:text-3xl flex-shrink-0">${icon}</span>
-            <div class="min-w-0 flex-1">
-              <h4 class="font-bold text-slate-800 text-sm sm:text-base font-heading leading-tight truncate" title="${l.titolo}">${l.titolo}</h4>
-              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span class="text-[10px] font-bold text-slate-500 uppercase">${l.materia}</span>
-                ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">${l.classe}</span>` : ''}
-                ${isCustom ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">📸 Tua Lezione</span>` : ''}
-                ${isRead ? `<span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Studiata</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
-                    title="Cancella dalla memoria" 
-                    class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-200 text-red-600 font-bold text-xs flex items-center gap-1 transition-colors"
-                    aria-label="Cancella lezione">
-              <span>🗑️</span>
-              <span class="hidden sm:inline">Cancella</span>
-            </button>
-            <span class="btn-tactile ${isCurrent ? 'btn-blue text-white' : 'btn-slate text-slate-700'} text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center">
-              ${isCurrent ? 'Attiva' : 'Apri ➔'}
-            </span>
-          </div>
+    if (currentFilter === 'archived' && archivedLessons.length > 0) {
+      filterBar += `
+        <div class="p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium mb-3 flex items-center gap-2">
+          <span>💡</span>
+          <span>Lezioni archiviate per il ripasso: puoi rileggerle quando vuoi o premere <strong>"Riporta"</strong> per riaverle tra le lezioni attive in studio.</span>
         </div>
       `;
-    }).join('');
+    }
 
+    let cardsHtml = '';
+
+    if (displayedLessons.length === 0) {
+      if (currentFilter === 'archived') {
+        cardsHtml = `
+          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-amber-200">
+            <span class="text-3xl mb-1 block">📦</span>
+            <p class="text-slate-600 font-bold text-sm mb-1">Nessuna lezione archiviata.</p>
+            <p class="text-slate-400 text-xs">Quando hai finito di studiare una lezione, premi il tasto <strong>"📦 Archivia"</strong> per conservarla qui senza ingombrare la lista delle lezioni in studio!</p>
+          </div>
+        `;
+      } else {
+        cardsHtml = `
+          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
+            <span class="text-3xl mb-1 block">📚</span>
+            <p class="text-slate-600 font-bold text-sm mb-2">Tutte le lezioni sono state archiviate o rimosse!</p>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+              <button onclick="App.setDrawerFilter('archived')" class="btn-tactile btn-amber text-xs font-bold px-3 py-1.5 rounded-xl text-amber-950">
+                📦 Guarda le lezioni archiviate (${archivedLessons.length})
+              </button>
+              <button onclick="App.restoreDemoLessons()" class="btn-tactile btn-blue text-xs font-bold px-3 py-1.5 rounded-xl text-white">
+                🔄 Ripristina lezioni demo
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      cardsHtml = `
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+          ${displayedLessons.map(l => {
+            const isCurrent = this.currentLesson && this.currentLesson.id === l.id;
+            const isCustom = l.id && l.id.toString().startsWith('custom-');
+            const isRead = this.stats && this.stats.readLessons && this.stats.readLessons.includes(l.id);
+            const isArchived = archivedIds.includes(l.id);
+            const icon = l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚';
+
+            return `
+              <div onclick="App.loadLessonById('${l.id}')" 
+                   class="card-clay p-3 sm:p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between gap-2 transition-all ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/50 shadow-sm' : 'bg-white'}">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <span class="text-2xl sm:text-3xl flex-shrink-0">${icon}</span>
+                  <div class="min-w-0 flex-1">
+                    <h4 class="font-bold text-slate-800 text-sm sm:text-base font-heading leading-tight truncate" title="${l.titolo}">${l.titolo}</h4>
+                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">${l.materia}</span>
+                      ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">${l.classe}</span>` : ''}
+                      ${isCustom ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">📸 Tua Lezione</span>` : ''}
+                      ${isRead ? `<span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Studiata</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  ${isArchived ? `
+                    <button onclick="event.stopPropagation(); App.unarchiveLesson('${l.id}')" 
+                            title="Riporta questa lezione tra quelle attive" 
+                            class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 transition-colors"
+                            aria-label="Riporta lezione in studio">
+                      <span>📥</span>
+                      <span class="hidden sm:inline">Riporta</span>
+                    </button>
+                  ` : `
+                    <button onclick="event.stopPropagation(); App.archiveLesson('${l.id}')" 
+                            title="Archivia lezione per tenerla da parte" 
+                            class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs flex items-center gap-1 transition-colors"
+                            aria-label="Archivia lezione">
+                      <span>📦</span>
+                      <span class="hidden sm:inline">Archivia</span>
+                    </button>
+                  `}
+                  <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
+                          title="Cancella dalla memoria" 
+                          class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-200 text-red-600 font-bold text-xs flex items-center gap-1 transition-colors"
+                          aria-label="Cancella lezione">
+                    <span>🗑️</span>
+                  </button>
+                  <span class="btn-tactile ${isCurrent ? 'btn-blue text-white' : 'btn-slate text-slate-700'} text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center">
+                    ${isCurrent ? (isArchived ? 'In Lettura' : 'Attiva') : (isArchived ? 'Rileggi ➔' : 'Apri ➔')}
+                  </span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    let footerHtml = '';
     if (hiddenDemos.length > 0) {
-      html += `
-        <div class="col-span-full pt-2 flex justify-end">
+      footerHtml = `
+        <div class="pt-3 mt-3 border-t border-slate-200 flex justify-end">
           <button onclick="App.restoreDemoLessons()" class="text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold flex items-center gap-1">
             <span>🔄</span>
             <span>Ripristina le ${hiddenDemos.length} lezioni demo nascoste</span>
@@ -1116,12 +1273,12 @@ const App = {
       `;
     }
 
-    list.innerHTML = html;
+    list.innerHTML = filterBar + cardsHtml + footerHtml;
   },
 
   loadLessonById(id) {
     this.sound.pop();
-    const allLessons = this.getAllLessons();
+    const allLessons = this.getAllLessons(true);
     const found = allLessons.find(l => l.id === id);
     if (found) {
       this.loadLesson(found);
@@ -1134,7 +1291,7 @@ const App = {
   },
 
   deleteLesson(id) {
-    const all = this.getAllLessons();
+    const all = this.getAllLessons(true);
     const target = all.find(l => l.id === id);
     if (!target) return;
 
@@ -1167,25 +1324,33 @@ const App = {
       }
     }
 
-    // 3. Remove from read history if tracked
+    // 3. Remove from archive list if it was archived
+    let archived = this.getArchivedLessonIds().filter(archId => archId !== id);
+    localStorage.setItem('studio_magico_archived_lessons', JSON.stringify(archived));
+
+    // 4. Remove from read history if tracked
     if (this.stats && Array.isArray(this.stats.readLessons)) {
       this.stats.readLessons = this.stats.readLessons.filter(readId => readId !== id);
       this.saveStats();
     }
 
-    // 4. If current active lesson was deleted, load next available lesson
-    const remaining = this.getAllLessons();
+    // 5. If current active lesson was deleted, load next available lesson
+    const remainingActive = this.getAllLessons(false);
+    const remainingAll = this.getAllLessons(true);
     if (this.currentLesson && this.currentLesson.id === id) {
-      if (remaining.length > 0) {
-        this.loadLesson(remaining[0]);
+      if (remainingActive.length > 0) {
+        this.loadLesson(remainingActive[0]);
+      } else if (remainingAll.length > 0) {
+        this.loadLesson(remainingAll[0]);
       } else if (window.DEMO_LESSONS && window.DEMO_LESSONS.length > 0) {
         localStorage.removeItem('studio_magico_hidden_demos');
         this.loadLesson(window.DEMO_LESSONS[0]);
       }
     }
 
-    // 5. Re-render drawer list & update mascot
+    // 6. Re-render drawer list & update mascot
     this.renderSavedLessonsList();
+    this.updateCurrentLessonArchiveBtn();
     this.setMascotMessage(`Lezione "${target.titolo}" rimossa dalla memoria! 🧹`, true);
   },
 

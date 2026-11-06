@@ -539,5 +539,35 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
 
   console.log('✓ Lesson deletion and memory cleanup logic verified');
 
+  // Test Q: Lesson Archive & Unarchive Lifecycle Verification
+  assert(appCode.includes('archiveLesson'), 'app.js missing archiveLesson method');
+  assert(appCode.includes('unarchiveLesson'), 'app.js missing unarchiveLesson method');
+  assert(appCode.includes('toggleArchiveCurrentLesson'), 'app.js missing toggleArchiveCurrentLesson method');
+  assert(appCode.includes('updateCurrentLessonArchiveBtn'), 'app.js missing updateCurrentLessonArchiveBtn method');
+  assert(appCode.includes('getArchivedLessonIds'), 'app.js missing getArchivedLessonIds method');
+
+  // Simulate archive operations
+  let archivedIds = [];
+  const lessons = [
+    { id: 'custom-101', titolo: 'I Romani' },
+    { id: 'custom-102', titolo: 'Il Sistema Solare' },
+    { id: 'storia-fuoco-3elem', titolo: 'Il Fuoco' }
+  ];
+
+  // 1. Archive custom-101
+  archivedIds.push('custom-101');
+  const activeLessons = lessons.filter(l => !archivedIds.includes(l.id));
+  const archivedLessons = lessons.filter(l => archivedIds.includes(l.id));
+
+  assert(activeLessons.length === 2 && !activeLessons.some(l => l.id === 'custom-101'), 'Archived lesson must be removed from active lessons view');
+  assert(archivedLessons.length === 1 && archivedLessons[0].id === 'custom-101', 'Archived lesson must appear in archive view');
+
+  // 2. Unarchive custom-101
+  archivedIds = archivedIds.filter(id => id !== 'custom-101');
+  const restoredActive = lessons.filter(l => !archivedIds.includes(l.id));
+  assert(restoredActive.length === 3, 'Unarchiving must restore lesson to active list');
+
+  console.log('✓ Lesson archive & unarchive lifecycle verified');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

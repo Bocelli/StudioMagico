@@ -158,6 +158,10 @@
           </span>
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="archiveCurrentLessonBtn" onclick="App.toggleArchiveCurrentLesson()" title="Archivia questa lezione già studiata" class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+            <span>📦</span>
+            <span class="hidden xs:inline">Archivia</span>
+          </button>
           <button id="deleteCurrentLessonBtn" onclick="App.deleteCurrentLesson()" title="Cancella questa lezione dalla memoria" class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
             <span>🗑️</span>
             <span class="hidden xs:inline">Cancella</span>
@@ -174,14 +178,10 @@
         I Primi Uomini e la Meraviglia del Fuoco
       </h2>
 
-      <!-- DRAWER: Lezioni Precaricate / Salvate -->
+      <!-- DRAWER: Lezioni Precaricate / Salvate & Archivio -->
       <div id="lessonsDrawer" class="hidden my-4 p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold text-slate-700 font-heading text-base sm:text-lg">Lezioni Pronte & Cronologia:</h3>
-          <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm font-bold">Chiudi ✕</button>
-        </div>
-        <div id="demoLessonsList" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-          <!-- Populated by JavaScript -->
+        <div id="demoLessonsList">
+          <!-- Populated dynamically by JavaScript -->
         </div>
       </div>
 
@@ -498,7 +498,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=23"></script>
-  <script src="app.js?v=23"></script>
+  <script src="demo-data.js?v=24"></script>
+  <script src="app.js?v=24"></script>
 </body>
 </html>

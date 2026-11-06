@@ -2,26 +2,27 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.4 (Lesson Deletion & Storage Memory Management)  
+> **Stato Rilascio:** v3.5 (Lesson Archive Lifecycle & Tab Filtering)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Pulsante Cancella / Gestione Memoria Lezioni Studiate**:
-   - *Problema rilevato dall'utente*: le lezioni caricate ed elaborate (o già studiate) restavano memorizzate nel browser senza alcuna possibilità di eliminarle per fare spazio e tenere ordinato lo storico.
+1. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato**:
+   - *Problema rilevato dall'utente*: necessità di archiviare le lezioni già studiate per tenerle da parte e poterle rileggere tra settimane o mesi, senza averle in mezzo tra le lezioni attive in studio.
    - *Soluzione*:
-     - Inserito il pulsante dedicato `🗑️ Cancella` su ciascuna scheda nel drawer *"Scegli Altra Lezione"* (`#demoLessonsList`), con dialog di conferma di sicurezza per evitare cancellazioni involontarie del bambino.
-     - Inserito il pulsante rapido `🗑️ Cancella` anche nell'intestazione della lezione attualmente aperta.
-     - Rimozione chirurgica dal `localStorage` (`studio_magico_custom_lessons` per le lezioni custom, `studio_magico_hidden_demos` per nascondere le demo già studiate) e pulizia contestuale dalla cronologia di lettura (`readLessons`).
-     - Cambio automatico e fluido alla lezione rimanente successiva nel caso in cui venga cancellata la lezione attiva.
-     - Aggiunto link per ripristinare le lezioni demo di base qualora venissero nascoste.
-2. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
-   - Algoritmo di Fisher-Yates per distribuire casualmente ed equamente le risposte esatte tra A, B e C, sia all'avvio sia alla pressione di "Riprova il Quiz".
-3. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
-   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x, estensione flashcard e quiz).
-4. **Risoluzione Bug Layout Mobile (v3.2)**:
-   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato, eliminazione dello spazio bianco vuoto su smartphone.
+     - Inserito il pulsante rapido `📦 Archivia` nell'intestazione della lezione aperta (che si trasforma dinamicamente in `📥 Dall'Archivio` se la lezione è già archiviata).
+     - Riorganizzato il drawer *"Scegli Altra Lezione"* con filtro a sezioni: **`[ 📚 In Studio (N) ]`** per le lezioni attive e **`[ 📦 Archivio (M) ]`** per le lezioni archiviate.
+     - Azione `📦 Archivia` presente su ogni scheda attiva e azione `📥 Riporta` su ogni scheda archiviata per ripristinarla in studio con un solo tocco.
+     - Persistenza dello stato su `localStorage.getItem('studio_magico_archived_lessons')`.
+2. **Pulsante Cancella / Gestione Memoria Lezioni Studiate (v3.4)**:
+   - Eliminazione definitiva delle lezioni dalla memoria browser con pulizia sincronizzata di custom lessons, hidden demos, archivio e read stats.
+3. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
+   - Algoritmo di Fisher-Yates per distribuire casualmente ed equamente le risposte esatte tra A, B e C.
+4. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
+   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x).
+5. **Risoluzione Bug Layout Mobile (v3.2)**:
+   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato.
 
 ---
 
@@ -100,6 +101,7 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 - **Test N**: Validazione dell'algoritmo di scalabilità proporzionale multi-pagina (1, 2, 3, 4+ pagine) per parole min/max, paragrafi e target flashcard/quiz.
 - **Test O**: Verifica dinamica dello shuffler delle opzioni quiz (algoritmo di Fisher-Yates, conservazione rigorosa della risposta esatta, verifica della distribuzione casuale equilibrata tra le opzioni A, B e C su 150 iterazioni).
 - **Test P**: Validazione della cancellazione lezioni (`deleteLesson`, `deleteCurrentLesson`, `restoreDemoLessons`) e della pulizia sincronizzata di storage e statistiche.
+- **Test Q**: Validazione del ciclo di vita dell'archiviazione lezioni (`archiveLesson`, `unarchiveLesson`, `toggleArchiveCurrentLesson`, separazione e filtraggio tra lezioni attive e archiviate).
 
 ---
 
@@ -128,7 +130,8 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 ✓ 1ª Media demo lesson validation passed
 ✓ Dynamic grade prompt calibration verified
 ✓ Multi-page proportional scaling verification passed (1, 2, 3, 4+ pages verified)
-✓ Quiz options dynamic shuffling & balanced distribution verified (A: 42, B: 56, C: 52 across 150 runs)
+✓ Quiz options dynamic shuffling & balanced distribution verified (A: 47, B: 60, C: 43 across 150 runs)
 ✓ Lesson deletion and memory cleanup logic verified
+✓ Lesson archive & unarchive lifecycle verified
 --- ALL CHECKS PASSED (Ponytail Approved) ---
 ```
