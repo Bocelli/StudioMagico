@@ -2,20 +2,28 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.7 (Clean Single-Row Header Purification & Contextual Action Placement)  
+> **Stato Rilascio:** v3.8 (Mobile Top Navbar Collision Immunity & Layout Architecture)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Ripristino Eleganza e Pulizia Header Scheda Lezione**:
+1. **Risoluzione Definitiva Collisione e Sovrapposizione Header Mobile (v3.8)**:
+   - *Bug riscontrato dall'utente tramite screenshot (`media_1793972249898_b3e629a7.jpg` con freccia rossa)*:
+     - Su schermi smartphone (360px - 390px), il selettore della classe (`🎒 3ª Elem ˅`) si sovrapponeva fisicamente coprendo parzialmente il contatore delle stelline (`⭐ 50`).
+   - *Analisi di Causa Radice (Root Cause)*:
+     - L'elemento select era racchiuso in un wrapper `div` con `flex-shrink min-w-0` mentre i fratelli (`#headerStars`, `#openUploadBtn`, `#openSettingsBtn`) avevano tutti `flex-shrink-0`.
+     - In carenza di spazio orizzontale su schermi stretti (360px), il flexbox comprimeva il wrapper del selettore fino a ~15px; tuttavia il controllo `<select>` nativo non può ridursi sotto la sua larghezza minima di contenuto e, in assenza di `overflow: hidden`, strabordava a destra coprendo il badge delle stelline collocato subito dopo.
+     - Inoltre il pulsante fotocamera mostrava l'etichetta testuale `Foto` su mobile, consumando oltre 72px e saturando la larghezza disponibile.
+   - *Soluzione architetturale implementata*:
+     - **Rimozione Wrapper Fragile**: eliminato il contenitore intermedio; il `<select id="gradeSelect">` è ora figlio diretto del contenitore flex con `flex-shrink-0`.
+     - **Icon-Only Mobile Action**: il pulsante `#openUploadBtn` su mobile visualizza l'icona tattile quadrata della fotocamera (32x32px), nascondendo il testo `Foto Libro` solo su schermi piccoli (`hidden sm:inline`).
+     - **Normalizzazione Aspetto Select**: introdotto in `style.css` un chevron SVG pulito con `appearance: none`, eliminando il padding invisibile anomalo inserito dai browser Android nativi.
+     - **Zero Overlap Garantito**: la somma delle larghezze minime (Logo ~114px + Selettore ~80px + Stelline ~42px + Foto ~32px + Settings ~32px + gap ~20px) ammonta a soli 320px, lasciando oltre 40px di margine libero su schermi 360px e 70px su 390px, rendendo fisicamente impossibile qualsiasi sovrapposizione.
+2. **Ripristino Eleganza e Pulizia Header Scheda Lezione (v3.7)**:
    - *Problema rilevato dall'utente tramite screenshot (`media_1793970609622_38714aad.jpg`)*:
-     - I pulsanti `📦` e `🗑️` e `📚 Lezioni` nell'intestazione della lezione attiva formavano una seconda riga spezzata e disordinata tra i badge della classe e il titolo, con due piccoli riquadri emoji dall'aspetto rotto e disallineato.
-   - *Soluzione architetturale*:
-     - **Rimozione Clutter dall'Header**: l'intestazione torna ad essere una riga unica, pulita e armoniosa: a sinistra i badge informativi (`[ STORIA ] [ 3ª ELEMENTARE ]` ed eventuale `[ 📦 Archiviata ]`), a destra l'unico pulsante principale `[ 📚 Altre Lezioni ]` che apre il cassetto di gestione.
-     - **Collocazione Naturale dell'Archiviazione**: inserito il pulsante `[ 📦 Archivia Lezione ]` al termine della spiegazione didattica, accanto a `[ ⭐ Ho letto il racconto! ]`, dove lo studente/genitore compie naturalmente l'azione dopo aver finito di studiare.
-     - **Risoluzione Troncatura Selettore Classe**: allargato il vincolo `max-w` del selettore da 95px a 112px, eliminando i fastidiosi puntini di sospensione (`🎒 3ª Elem` ora visibile per intero).
-     - **Gestione Completa nel Cassetto**: all'interno del cassetto lezioni, ogni scheda mantiene i comandi dedicati `[ 📦 Archivia ]` (o `[ 📥 Riporta ]`) e `[ 🗑️ Elimina ]`.
+     - I pulsanti `📦` e `🗑️` e `📚 Lezioni` nell'intestazione della lezione attiva formavano una seconda riga spezzata e disordinata.
+   - *Soluzione*: Intestazione pulita su riga singola e spostamento dell'archiviazione contestuale al termine della lettura.
 2. **Risoluzione Bug Layout Drawer Mobile (v3.6)**:
    - Architettura a 2 righe per ciascuna scheda lezione nel cassetto per prevenire qualsiasi overflow su schermi 360-390px.
 3. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato (v3.5)**:

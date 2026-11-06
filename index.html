@@ -39,21 +39,21 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <!-- Custom Kid UI Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=27">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-amber-200">
 
   <!-- TOP HEADER / NAV BAR -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-2.5 py-2.5 sm:px-6 sm:py-3 shadow-sm w-full overflow-hidden">
-    <div class="max-w-6xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3 w-full">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-2 py-2 sm:px-6 sm:py-3 shadow-sm w-full">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-1 sm:gap-3 w-full">
       
       <!-- Brand Logo -->
       <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl sm:text-2xl shadow-md border-b-2 border-indigo-700">
+        <div class="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-lg sm:text-2xl shadow-md border-b-2 border-indigo-700 flex-shrink-0">
           🚀
         </div>
         <div>
-          <h1 class="text-base sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight whitespace-nowrap">
+          <h1 class="text-sm sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight whitespace-nowrap">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
           <span id="brandSubtitle" class="text-[10px] sm:text-[11px] font-bold text-slate-400 hidden sm:block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v3.1</span></span>
@@ -61,22 +61,20 @@
       </div>
 
       <!-- Center & Right Stats and Actions -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-shrink">
+      <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
         <!-- Grade Selector (3ª Elem to 3ª Media) -->
-        <div class="relative inline-flex items-center min-w-0 flex-shrink">
-          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl outline-none cursor-pointer transition-colors shadow-xs max-w-[112px] sm:max-w-[170px] md:max-w-none truncate">
-            <option value="3-elem">🎒 3ª Elem</option>
-            <option value="4-elem">🎒 4ª Elem</option>
-            <option value="5-elem">🎒 5ª Elem</option>
-            <option value="1-media">📚 1ª Media</option>
-            <option value="2-media">📚 2ª Media</option>
-            <option value="3-media">🎓 3ª Media</option>
-          </select>
-        </div>
+        <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl outline-none cursor-pointer transition-colors shadow-xs flex-shrink-0">
+          <option value="3-elem">🎒 3ª Elem</option>
+          <option value="4-elem">🎒 4ª Elem</option>
+          <option value="5-elem">🎒 5ª Elem</option>
+          <option value="1-media">📚 1ª Media</option>
+          <option value="2-media">📚 2ª Media</option>
+          <option value="3-media">🎓 3ª Media</option>
+        </select>
 
         <!-- Stars Counter -->
         <div id="headerStars" class="bg-amber-100/80 border-2 border-amber-300 px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-full flex items-center gap-1 shadow-sm flex-shrink-0">
-          <span class="text-base sm:text-xl">⭐</span>
+          <span class="text-sm sm:text-xl">⭐</span>
           <span id="starCount" class="font-extrabold text-amber-900 font-heading text-xs sm:text-lg">50</span>
         </div>
 
@@ -92,13 +90,12 @@
         </button>
 
         <!-- New Photo Upload CTA Button -->
-        <button id="openUploadBtn" class="btn-tactile btn-blue px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md flex-shrink-0">
+        <button id="openUploadBtn" class="btn-tactile btn-blue p-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md flex-shrink-0" title="Carica foto del libro">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
           <span class="hidden sm:inline">Foto Libro</span>
-          <span class="sm:hidden text-xs">Foto</span>
         </button>
 
         <!-- Parent Settings Button -->
@@ -498,7 +495,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=26"></script>
-  <script src="app.js?v=26"></script>
+  <script src="demo-data.js?v=27"></script>
+  <script src="app.js?v=27"></script>
 </body>
 </html>

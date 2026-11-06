@@ -569,5 +569,28 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
 
   console.log('✓ Lesson archive & unarchive lifecycle verified');
 
+  // Test R: Mobile Top Navbar Collision Prevention & Responsiveness
+  const htmlContent = fs.readFileSync('index.html', 'utf8');
+  const cssContent = fs.readFileSync('style.css', 'utf8');
+
+  assert(htmlContent.includes('id="gradeSelect"'), 'index.html missing gradeSelect element');
+  assert(htmlContent.includes('id="headerStars"'), 'index.html missing headerStars element');
+  assert(htmlContent.includes('id="openUploadBtn"'), 'index.html missing openUploadBtn element');
+  assert(htmlContent.includes('id="openSettingsBtn"'), 'index.html missing openSettingsBtn element');
+
+  // Verify elements have flex-shrink-0 to prevent flexbox collision/overlap
+  assert(/id="gradeSelect"[^>]*flex-shrink-0/.test(htmlContent), 'gradeSelect must have flex-shrink-0 to prevent collision');
+  assert(/id="headerStars"[^>]*flex-shrink-0/.test(htmlContent), 'headerStars must have flex-shrink-0');
+  assert(/id="openUploadBtn"[^>]*flex-shrink-0/.test(htmlContent), 'openUploadBtn must have flex-shrink-0');
+
+  // Verify openUploadBtn text is hidden on mobile to conserve header width
+  assert(htmlContent.includes('<span class="hidden sm:inline">Foto Libro</span>'), 'Foto text must be hidden on mobile');
+
+  // Verify CSS contains compact mobile-safe rules
+  assert(cssContent.includes('#gradeSelect'), 'style.css must contain responsive styling for gradeSelect');
+  assert(cssContent.includes('appearance: none'), 'gradeSelect must use normalized appearance to prevent platform padding blowout');
+
+  console.log('✓ Mobile top navbar collision prevention verified');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
