@@ -2,18 +2,23 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.2 (Mobile Responsive Overflow Fix & Proportional Multi-Page Scaling)  
+> **Stato Rilascio:** v3.3 (Quiz Dynamic Answer Shuffling & Anti-Bias Distribution)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Analisi e Risoluzione Comportamento Multi-Foto**:
-   - *Problema rilevato dall'utente*: sia caricando 1 pagina sia caricandone 4, l'IA produceva sempre un riassunto della stessa identica lunghezza fissa (120-180 parole), provocando un'eccessiva compressione e la perdita di oltre il 60% dei concetti didattici delle pagine successive.
-   - *Soluzione*: implementazione di un modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x, espansione paragrafi, estensione target flashcard e quiz da 5 fino a 12, regole tassative multi-pagina nel prompt di Gemini).
-2. **Risoluzione Bug Layout Mobile (Overflow Orizzontale & White Gap)**:
-   - *Problema rilevato da screenshot utente*: su schermi smartphone (360-390px di larghezza), l'header non vincolato (con il testo del selettore `🎓 3ª Media (13-14 anni)` lungo oltre 230px sommato a logo, stelline e pulsanti) forzava l'intera viewport a oltre 650px. Ciò provocava il taglio a sinistra (il logo `StudioMagico` spariva fuori schermo) e un enorme vuoto bianco a destra di ~250px.
-   - *Soluzione*: applicazione dei principi di `awesome-ai-tools-for-ui` (Swiss design / mobile-first touch optimization): `overflow-x: hidden` globale, selettore troncato e compatto (`🎒 3ª Elem`, `📚 1ª Media`) con `truncate` e larghezze massime responsive, e padding calibrati.
+1. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico)**:
+   - *Problema rilevato dall'utente*: nei quiz generati dall'IA la risposta vera si trovava **sempre e solo come prima opzione (lettera A)**, permettendo all'alunno di indovinare senza leggere o riflettere.
+   - *Causa radice*: il prompt per Gemini conteneva nello schema JSON di esempio la dicitura `"opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"], "risposta_corretta": 0`, portando l'LLM a replicare pedissequamente la prima posizione per default.
+   - *Soluzione*:
+     - Algoritmo di Fisher-Yates (`shuffleLessonQuiz`) integrato direttamente in runtime all'interno di `app.js`: ogni opzione viene tracciata con il flag di correttezza, mescolata casualmente e riassociata al nuovo indice `risposta_corretta`.
+     - Shuffling automatico al caricamento della lezione (`loadLesson`), all'analisi IA e alla pressione del pulsante "Riprova il Quiz" (`restartQuiz`) per prevenire l'apprendimento mnemonico.
+     - Aggiornamento delle istruzioni di sistema nel prompt Gemini con divieto esplicito di fissare la risposta in posizione A e variazione bilanciata tra 0, 1 e 2.
+2. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
+   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x, espansione paragrafi, estensione target flashcard e quiz da 5 fino a 12).
+3. **Risoluzione Bug Layout Mobile (v3.2)**:
+   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato, eliminazione dello spazio bianco vuoto su schermi smartphone.
 
 ---
 
@@ -90,6 +95,7 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 - **Test L**: Validazione dello schema e conformità della nuova lezione demo di 1ª Media.
 - **Test M**: Verifica della composizione dinamica del prompt IA in funzione della classe.
 - **Test N**: Validazione dell'algoritmo di scalabilità proporzionale multi-pagina (1, 2, 3, 4+ pagine) per parole min/max, paragrafi e target flashcard/quiz.
+- **Test O**: Verifica dinamica dello shuffler delle opzioni quiz (algoritmo di Fisher-Yates, conservazione rigorosa della risposta esatta, verifica della distribuzione casuale equilibrata tra le opzioni A, B e C su 150 iterazioni).
 
 ---
 
@@ -118,5 +124,6 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 ✓ 1ª Media demo lesson validation passed
 ✓ Dynamic grade prompt calibration verified
 ✓ Multi-page proportional scaling verification passed (1, 2, 3, 4+ pages verified)
+✓ Quiz options dynamic shuffling & balanced distribution verified (A: 52, B: 46, C: 52 across 150 runs)
 --- ALL CHECKS PASSED (Ponytail Approved) ---
 ```

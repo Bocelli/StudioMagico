@@ -45,20 +45,20 @@ window.DEMO_LESSONS = [
         domanda: "Cosa scoprirono gli uomini riguardo agli animali feroci?",
         opzioni: [
           "Che gli animali feroci amavano il fuoco",
-          "Che gli animali feroci scappavano spaventati dal fuoco",
-          "Che gli animali si addormentavano subito"
+          "Che gli animali si addormentavano subito",
+          "Che gli animali feroci scappavano spaventati dal fuoco"
         ],
-        risposta_corretta: 1,
+        risposta_corretta: 2,
         indizio: "Gli animali hanno tanta paura delle fiamme e della luce forte!"
       },
       {
         domanda: "Come facevano ad accendere il fuoco quando impararono il trucco?",
         opzioni: [
-          "Usavano fiammiferi magici comprati al mercato",
           "Sfregavano legnetti o battevano due pietre per fare scintille",
+          "Usavano fiammiferi magici comprati al mercato",
           "Chiamavano il sole con una canzoncina"
         ],
-        risposta_corretta: 1,
+        risposta_corretta: 0,
         indizio: "Non c'erano negozi: usavano la pietra selce e pezzetti di legno secco!"
       },
       {

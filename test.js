@@ -426,5 +426,86 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(appCode.includes('pageMultiplier'), 'Missing pageMultiplier logic in app.js');
   console.log('✓ Multi-page proportional scaling verification passed (1, 2, 3, 4+ pages verified)');
 
+  // Test O: Quiz Options Dynamic Shuffling & Non-Fixed Answer Distribution
+  function shuffleLessonQuiz(lesson) {
+    if (!lesson || !Array.isArray(lesson.quiz)) return;
+    lesson.quiz.forEach(q => {
+      if (!q || !Array.isArray(q.opzioni) || q.opzioni.length < 2) return;
+      const currentCorrectIdx = (typeof q.risposta_corretta === 'number' && q.risposta_corretta >= 0 && q.risposta_corretta < q.opzioni.length)
+        ? q.risposta_corretta
+        : 0;
+
+      const items = q.opzioni.map((opt, idx) => ({
+        text: opt,
+        isCorrect: (idx === currentCorrectIdx)
+      }));
+
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+      }
+
+      q.opzioni = items.map(item => item.text);
+      const newCorrectIdx = items.findIndex(item => item.isCorrect);
+      q.risposta_corretta = newCorrectIdx >= 0 ? newCorrectIdx : 0;
+    });
+  }
+
+  const testQuizLesson = {
+    titolo: "Test Quiz Shuffle",
+    materia: "Storia",
+    classe: "3ª Elementare",
+    riassunto: "Paragrafo di test per verificare che lo shuffling delle opzioni del quiz funzioni perfettamente e conservi la correttezza del testo.",
+    parole_chiave: [
+      { termine: "Concetto A", spiegazione: "Spiegazione del concetto A" },
+      { termine: "Concetto B", spiegazione: "Spiegazione del concetto B" }
+    ],
+    quiz: [
+      {
+        domanda: "Domanda 1?",
+        opzioni: ["Risposta Vera 1", "Sbagliata 1A", "Sbagliata 1B"],
+        risposta_corretta: 0,
+        indizio: "Indizio 1"
+      },
+      {
+        domanda: "Domanda 2?",
+        opzioni: ["Risposta Vera 2", "Sbagliata 2A", "Sbagliata 2B"],
+        risposta_corretta: 0,
+        indizio: "Indizio 2"
+      }
+    ]
+  };
+
+  const counts = { 0: 0, 1: 0, 2: 0 };
+  const iterations = 150;
+
+  for (let i = 0; i < iterations; i++) {
+    shuffleLessonQuiz(testQuizLesson);
+    
+    // Assert correctness of question 1
+    const q1 = testQuizLesson.quiz[0];
+    assert(q1.opzioni[q1.risposta_corretta] === "Risposta Vera 1", "Shuffling corrupted the correct answer of question 1!");
+    counts[q1.risposta_corretta]++;
+
+    // Assert correctness of question 2
+    const q2 = testQuizLesson.quiz[1];
+    assert(q2.opzioni[q2.risposta_corretta] === "Risposta Vera 2", "Shuffling corrupted the correct answer of question 2!");
+    
+    // Schema must stay 100% valid
+    assert(validateLesson(testQuizLesson) === true, "Validation failed after quiz shuffling");
+  }
+
+  // Verify that all positions (0, 1, 2) were chosen over 150 iterations (none is stuck at 0)
+  assert(counts[0] > 15, `Index 0 expected >= 15 hits, got ${counts[0]}`);
+  assert(counts[1] > 15, `Index 1 expected >= 15 hits, got ${counts[1]}`);
+  assert(counts[2] > 15, `Index 2 expected >= 15 hits, got ${counts[2]}`);
+
+  // Verify app.js contains the shuffle function and prompt instruction
+  assert(appCode.includes('shuffleLessonQuiz'), 'app.js missing shuffleLessonQuiz implementation');
+  assert(appCode.includes('NON posizionare sempre la risposta corretta'), 'app.js missing randomized quiz answer prompt instruction');
+  console.log(`✓ Quiz options dynamic shuffling & balanced distribution verified (A: ${counts[0]}, B: ${counts[1]}, C: ${counts[2]} across ${iterations} runs)`);
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

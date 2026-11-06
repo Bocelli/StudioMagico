@@ -660,6 +660,9 @@ const App = {
     this.currentQuizIndex = 0;
     this.quizAnswersState = {};
 
+    // Dynamically randomize quiz options so answer A isn't always the correct one
+    this.shuffleLessonQuiz(this.currentLesson);
+
     // Update Banner Info
     const titleEl = document.getElementById('lessonTitle');
     const subjectEl = document.getElementById('lessonSubject');
@@ -780,7 +783,35 @@ const App = {
     }
   },
 
-  // --- Quiz Engine ---
+  // --- Quiz Engine & Randomization ---
+  shuffleLessonQuiz(lesson) {
+    if (!lesson || !Array.isArray(lesson.quiz)) return;
+    lesson.quiz.forEach(q => {
+      if (!q || !Array.isArray(q.opzioni) || q.opzioni.length < 2) return;
+      const currentCorrectIdx = (typeof q.risposta_corretta === 'number' && q.risposta_corretta >= 0 && q.risposta_corretta < q.opzioni.length)
+        ? q.risposta_corretta
+        : 0;
+
+      // Wrap each option with correctness indicator
+      const items = q.opzioni.map((opt, idx) => ({
+        text: opt,
+        isCorrect: (idx === currentCorrectIdx)
+      }));
+
+      // Fisher-Yates shuffle
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+      }
+
+      q.opzioni = items.map(item => item.text);
+      const newCorrectIdx = items.findIndex(item => item.isCorrect);
+      q.risposta_corretta = newCorrectIdx >= 0 ? newCorrectIdx : 0;
+    });
+  },
+
   renderQuizQuestion() {
     if (!this.currentLesson || !this.currentLesson.quiz) return;
     const questions = this.currentLesson.quiz;
@@ -957,6 +988,9 @@ const App = {
   restartQuiz() {
     this.quizAnswersState = {};
     this.currentQuizIndex = 0;
+    if (this.currentLesson) {
+      this.shuffleLessonQuiz(this.currentLesson);
+    }
     this.renderQuizQuestion();
   },
 
@@ -1214,6 +1248,7 @@ REGOLE TASSATIVE GENERALI:
 REQUISITI PER FLASHCARD E SUPER QUIZ:
 - "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, coprendo i concetti di tutte le pagine (termine, emoji simpatica e spiegazione adatta a ${grade.name}).
 - "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un aiutino per verificare la comprensione (${grade.quizDifficulty}).
+- IMPORTANTE SULLE RISPOSTE DEL QUIZ: NON posizionare sempre la risposta corretta sulla prima opzione (A)! Alterna la posizione in modo casuale ed equilibrato tra la prima (indice 0), la seconda (indice 1) e la terza (indice 2), impostando il valore numerico di "risposta_corretta" sul corrispondente indice (0, 1 o 2).
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
@@ -1232,8 +1267,8 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
   "quiz": [
     {
       "domanda": "Domanda per verificare la comprensione?",
-      "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
-      "risposta_corretta": 0,
+      "opzioni": ["Prima opzione plausibile", "Seconda opzione corretta", "Terza opzione"],
+      "risposta_corretta": 1,
       "indizio": "Un aiutino per ragionare."
     }
   ]
@@ -1419,6 +1454,9 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       parsedLesson.classe = parsedLesson.classe || (this.GRADE_PROFILES[this.selectedGrade]?.name || '3ª Elementare');
       parsedLesson.pagine = parsedLesson.pagine_analizzate || numPages;
       parsedLesson.storia_semplice = parsedLesson.riassunto;
+
+      // Randomize quiz answers order immediately so it is varied in storage as well
+      this.shuffleLessonQuiz(parsedLesson);
 
       // Save to localStorage
       let saved = [];
