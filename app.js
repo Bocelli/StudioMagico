@@ -278,7 +278,16 @@ const App = {
     // Active lesson reading time badge
     const readingBadge = document.getElementById('readingTimeBadge');
     if (readingBadge) {
-      readingBadge.innerText = profile.badgeTime;
+      if (this.currentLesson) {
+        const text = this.currentLesson.riassunto || this.currentLesson.storia_semplice || '';
+        const words = text.split(/\s+/).filter(Boolean).length;
+        const isMedia = (this.currentLesson.classe || profile.name).includes('Media');
+        const readingMinutes = Math.max(1, Math.round((words / (isMedia ? 130 : 100)) * 10) / 10);
+        const pagesLabel = this.currentLesson.pagine && this.currentLesson.pagine > 1 ? ` • ${this.currentLesson.pagine} pagine` : '';
+        readingBadge.innerText = `Lettura: ~${readingMinutes} min (${words} parole${pagesLabel})`;
+      } else {
+        readingBadge.innerText = profile.badgeTime;
+      }
     }
 
     // Mascot greeting update
@@ -673,7 +682,12 @@ const App = {
       classBadgeEl.innerText = lesson.classe || currentGradeProfile.name;
     }
     if (readingBadgeEl) {
-      readingBadgeEl.innerText = currentGradeProfile.badgeTime;
+      const text = lesson.riassunto || lesson.storia_semplice || '';
+      const words = text.split(/\s+/).filter(Boolean).length;
+      const isMedia = (lesson.classe || currentGradeProfile.name).includes('Media');
+      const readingMinutes = Math.max(1, Math.round((words / (isMedia ? 130 : 100)) * 10) / 10);
+      const pagesLabel = lesson.pagine && lesson.pagine > 1 ? ` • ${lesson.pagine} pagine` : '';
+      readingBadgeEl.innerText = `Lettura: ~${readingMinutes} min (${words} parole${pagesLabel})`;
     }
 
     // Render Structured Summary (Unified continuous narrative)
@@ -1132,17 +1146,58 @@ const App = {
 
       const grade = this.GRADE_PROFILES[this.selectedGrade] || this.GRADE_PROFILES['3-elem'];
       const totalPages = this.uploadedImages.length;
-      // Target for key points, flashcards and quiz (scaled by grade profile and total pages)
+      const numPages = Math.max(1, totalPages);
+
+      // Multi-Page Proportional Scaling:
+      // Modulates word count, paragraphs, and key points dynamically so that 2, 3, or 4 pages
+      // receive proportional pedagogical depth and aren't squashed into a 1-page template!
+      let pageMultiplier = 1;
+      let paragraphBonus = 0;
+      let keyPointBonus = 0;
+
+      if (numPages === 2) {
+        pageMultiplier = 1.65;
+        paragraphBonus = 1;
+        keyPointBonus = 2;
+      } else if (numPages === 3) {
+        pageMultiplier = 2.25;
+        paragraphBonus = 2;
+        keyPointBonus = 4;
+      } else if (numPages >= 4) {
+        pageMultiplier = 2.85;
+        paragraphBonus = 3;
+        keyPointBonus = 6;
+      }
+
+      const minWords = Math.round(grade.wordCountMin * pageMultiplier);
+      const maxWords = Math.round(grade.wordCountMax * pageMultiplier);
+      const totalParagraphs = grade.paragraphs + paragraphBonus;
+
       const baseKeyPoints = grade.keyPointsCount || 5;
-      const targetCount = totalPages > 1 ? Math.min(8, Math.max(baseKeyPoints, totalPages * 3)) : baseKeyPoints;
+      const targetCount = numPages > 1 
+        ? Math.min(12, Math.max(baseKeyPoints + keyPointBonus, numPages * 2)) 
+        : baseKeyPoints;
 
       const promptText = `
 Sei un docente esperto specializzato nell'insegnamento per ${grade.targetAudience}.
-Il tuo obiettivo è analizzare TUTTI i contenuti e i punti focali delle pagine caricate e amalgamarli in un UNICO TESTO DI STUDIO FLUIDO E ARMONIOSO (campo "riassunto"), unendo in una sola narrazione continua sia la visione d'insieme sia la spiegazione di ogni singolo punto chiave!
+Il tuo obiettivo è analizzare TUTTI i contenuti e i concetti chiave delle ${numPages > 1 ? numPages + ' pagine' : 'pagine'} caricate e amalgamarli in un UNICO TESTO DI STUDIO FLUIDO E ARMONIOSO (campo "riassunto"), unendo in una sola narrazione continua sia la visione d'insieme sia la spiegazione di ogni singolo punto chiave!
 
-REGOLE TASSATIVE PER IL TESTO (campo "riassunto"):
+${numPages > 1 ? `
+REGOLE TASSATIVE MULTI-PAGINA (${numPages} PAGINE DEL LIBRO CARICATE):
+- Sono state caricate ben ${numPages} pagine consecutive del libro di testo, chiaramente contrassegnate come [FOTO PAGINA 1], [FOTO PAGINA 2], ecc.
+- VIETATO condensare frettolosamente sacrificando i contenuti: ogni singola pagina ha pari importanza didattica!
+- Distribuisci la narrazione in modo equilibrato: organizza il testo in ${totalParagraphs} paragrafi in modo che gli argomenti di ciascuna pagina trovino spazio adeguato e siano spiegati ordinatamente in sequenza.
+- Estrai ed evidenzia in grassetto i concetti e punti focali di TUTTE le ${numPages} pagine (non solo della prima o dell'ultima!).
+- La lunghezza totale del testo DEVE essere proporzionata alle ${numPages} pagine: scrivi tra ${minWords} e ${maxWords} parole complessive.
+` : `
+REGOLE PER IL TESTO (1 PAGINA CARICATA):
+- Scrivi un testo unitario e scorrevole suddiviso in ${totalParagraphs} brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
+- Lunghezza del testo: tra ${minWords} e ${maxWords} parole complessive (calibrato per ${grade.name}).
+`}
+
+REGOLE TASSATIVE GENERALI:
 1. UNICO TESTO CONTINUO (NIENTE SCHEDE SEPARATE, NIENTE ELENCHI, NIENTE TITOLI STEP-BY-STEP):
-   - Scrivi un testo unitario e scorrevole suddiviso in ${grade.paragraphs} brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
+   - Scrivi un testo unitario e scorrevole suddiviso in ${totalParagraphs} paragrafi ben spaziati (separati da doppio a capo \\n\\n).
    - NON usare elenchi puntati o trattini (- o •).
    - NON usare sezioni rigide o etichette (niente "📌 Introduzione", "🔍 Punti focali", "💡 Conclusione").
    - Stile e tono: ${grade.toneDesc}
@@ -1152,21 +1207,20 @@ REGOLE TASSATIVE PER IL TESTO (campo "riassunto"):
    - Inserisci e spiega ciascun punto focale all'interno del racconto con una spiegazione calibrata per ${grade.name}.
    - Evidenzia sempre ogni termine o punto focale in **grassetto** (es. **il cartografo**, **la selce**, **la membrana cellulare**) direttamente nella frase in cui viene spiegato.
 
-3. LUNGHEZZA E LESSICO PER ${grade.name.toUpperCase()}:
-   - Lunghezza totale del testo: tra ${grade.wordCountMin} e ${grade.wordCountMax} parole complessive (calibrato per l'attenzione e la memoria di ${grade.name}).
+3. LUNGHEZZA E LESSICO PER ${grade.name.toUpperCase()} (${numPages} ${numPages > 1 ? 'PAGINE' : 'PAGINA'}):
+   - Lunghezza totale del testo: tra ${minWords} e ${maxWords} parole complessive.
    - Niente formule infantili finte ("Ciao sono Leo", "C'era una volta").
 
 REQUISITI PER FLASHCARD E SUPER QUIZ:
-- "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, con ciascun punto focale (termine, emoji simpatica e spiegazione adatta a ${grade.name}).
+- "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, coprendo i concetti di tutte le pagine (termine, emoji simpatica e spiegazione adatta a ${grade.name}).
 - "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un aiutino per verificare la comprensione (${grade.quizDifficulty}).
-
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Unisci e spiega tutti i punti focali di tutte le ${totalPages} pagine in questo unico testo!` : ''}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
   "titolo": "Titolo chiaro e corretto della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
   "classe": "${grade.name}",
+  "pagine_analizzate": ${numPages},
   "riassunto": "Primo paragrafo continuo che introduce l'argomento generale e i primi **punti focali**...\\n\\nSecondo paragrafo continuo che prosegue la spiegazione con i successivi **punti chiave**...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude il testo in modo armonioso...",
   "parole_chiave": [
     {
@@ -1363,6 +1417,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       // Ensure compatibility for both riassunto and storia_semplice
       parsedLesson.riassunto = parsedLesson.riassunto || parsedLesson.storia_semplice || '';
       parsedLesson.classe = parsedLesson.classe || (this.GRADE_PROFILES[this.selectedGrade]?.name || '3ª Elementare');
+      parsedLesson.pagine = parsedLesson.pagine_analizzate || numPages;
       parsedLesson.storia_semplice = parsedLesson.riassunto;
 
       // Save to localStorage

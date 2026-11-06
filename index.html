@@ -44,65 +44,66 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-amber-200">
 
   <!-- TOP HEADER / NAV BAR -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-4 py-3 sm:px-6 shadow-sm">
-    <div class="max-w-6xl mx-auto flex items-center justify-between gap-2">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-slate-200 px-2.5 py-2.5 sm:px-6 sm:py-3 shadow-sm w-full overflow-hidden">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3 w-full">
       
       <!-- Brand Logo -->
-      <div class="flex items-center gap-2.5">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-2xl shadow-md border-b-2 border-indigo-700">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl sm:text-2xl shadow-md border-b-2 border-indigo-700">
           🚀
         </div>
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
+          <h1 class="text-base sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight whitespace-nowrap">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span id="brandSubtitle" class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v3.1</span></span>
+          <span id="brandSubtitle" class="text-[10px] sm:text-[11px] font-bold text-slate-400 hidden sm:block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v3.1</span></span>
         </div>
       </div>
 
       <!-- Center & Right Stats and Actions -->
-      <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-shrink">
         <!-- Grade Selector (3ª Elem to 3ª Media) -->
-        <div class="relative inline-flex items-center">
-          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2.5 sm:px-3 rounded-2xl outline-none cursor-pointer transition-colors shadow-xs">
-            <option value="3-elem">🎒 3ª Elementare (8-9 anni)</option>
-            <option value="4-elem">🎒 4ª Elementare (9-10 anni)</option>
-            <option value="5-elem">🎒 5ª Elementare (10-11 anni)</option>
-            <option value="1-media">📚 1ª Media (11-12 anni)</option>
-            <option value="2-media">📚 2ª Media (12-13 anni)</option>
-            <option value="3-media">🎓 3ª Media (13-14 anni)</option>
+        <div class="relative inline-flex items-center min-w-0 flex-shrink">
+          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl outline-none cursor-pointer transition-colors shadow-xs max-w-[95px] xs:max-w-[125px] sm:max-w-[170px] md:max-w-none truncate">
+            <option value="3-elem">🎒 3ª Elem</option>
+            <option value="4-elem">🎒 4ª Elem</option>
+            <option value="5-elem">🎒 5ª Elem</option>
+            <option value="1-media">📚 1ª Media</option>
+            <option value="2-media">📚 2ª Media</option>
+            <option value="3-media">🎓 3ª Media</option>
           </select>
         </div>
+
         <!-- Stars Counter -->
-        <div id="headerStars" class="bg-amber-100/80 border-2 border-amber-300 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-          <span class="text-xl">⭐</span>
-          <span id="starCount" class="font-extrabold text-amber-900 font-heading text-lg">50</span>
+        <div id="headerStars" class="bg-amber-100/80 border-2 border-amber-300 px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-full flex items-center gap-1 shadow-sm flex-shrink-0">
+          <span class="text-base sm:text-xl">⭐</span>
+          <span id="starCount" class="font-extrabold text-amber-900 font-heading text-xs sm:text-lg">50</span>
         </div>
 
         <!-- Day Streak -->
-        <div class="hidden sm:flex bg-orange-100 border-2 border-orange-300 px-3 py-1.5 rounded-full items-center gap-1.5 shadow-sm">
+        <div class="hidden md:flex bg-orange-100 border-2 border-orange-300 px-3 py-1.5 rounded-full items-center gap-1.5 shadow-sm">
           <span class="text-lg">🔥</span>
           <span id="streakCount" class="font-extrabold text-orange-900 font-heading text-sm">1 Giorno</span>
         </div>
 
         <!-- Sound Toggle -->
-        <button id="soundToggle" class="hidden md:inline-flex btn-tactile btn-slate text-xs font-bold px-3 py-2 rounded-xl" title="Attiva/Disattiva Suoni">
+        <button id="soundToggle" class="hidden lg:inline-flex btn-tactile btn-slate text-xs font-bold px-3 py-2 rounded-xl" title="Attiva/Disattiva Suoni">
           🔔 Suoni: Attivi
         </button>
 
         <!-- New Photo Upload CTA Button -->
-        <button id="openUploadBtn" class="btn-tactile btn-blue px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-md">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button id="openUploadBtn" class="btn-tactile btn-blue px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md flex-shrink-0">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
           <span class="hidden sm:inline">Foto Libro</span>
-          <span class="sm:hidden">Foto</span>
+          <span class="sm:hidden text-xs">Foto</span>
         </button>
 
         <!-- Parent Settings Button -->
-        <button id="openSettingsBtn" class="btn-tactile btn-slate p-2.5 rounded-2xl" title="Impostazioni per il Genitore (Chiave IA)">
-          <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button id="openSettingsBtn" class="btn-tactile btn-slate p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex-shrink-0" title="Impostazioni per il Genitore (Chiave IA)">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
@@ -113,31 +114,31 @@
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-hidden">
 
     <!-- LEO THE ROBOT TUTOR MASCOT BANNER -->
-    <section class="card-clay p-4 sm:p-6 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 text-white relative overflow-hidden">
+    <section class="card-clay p-4 sm:p-6 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 text-white relative overflow-hidden w-full">
       <!-- Decorative background stars -->
       <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
       
-      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative z-10">
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-6 relative z-10 w-full">
         <!-- Mascot Avatar -->
         <div class="mascot-bounce flex-shrink-0 cursor-pointer" onclick="App.setMascotMessage('Tocca i pulsanti per leggere il riassunto, ripassare con le flashcard o metterti alla prova col quiz!')" title="Assistente di Studio">
-          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white border-4 border-amber-300 shadow-xl flex items-center justify-center text-5xl relative">
+          <div class="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl bg-white border-4 border-amber-300 shadow-xl flex items-center justify-center text-3xl sm:text-5xl relative">
             🤖
-            <span class="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white">
+            <span class="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 bg-emerald-500 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
               Online
             </span>
           </div>
         </div>
 
         <!-- Speech Bubble -->
-        <div class="flex-1 text-center sm:text-left">
-          <div class="inline-block bg-white/20 backdrop-blur-sm text-amber-200 text-xs font-black uppercase px-3 py-1 rounded-full mb-1 tracking-wide">
+        <div class="flex-1 text-center sm:text-left w-full min-w-0">
+          <div class="inline-block bg-white/20 backdrop-blur-sm text-amber-200 text-[11px] sm:text-xs font-black uppercase px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full mb-1 tracking-wide">
             Il Tuo Assistente di Studio
           </div>
-          <div class="bg-white text-slate-800 p-4 rounded-2xl shadow-md border-2 border-indigo-100 max-w-2xl">
-            <p id="mascotMessage" class="text-base sm:text-lg font-bold font-heading text-indigo-950 leading-snug">
+          <div class="bg-white text-slate-800 p-3 sm:p-4 rounded-2xl shadow-md border-2 border-indigo-100 max-w-2xl w-full">
+            <p id="mascotMessage" class="text-sm sm:text-lg font-bold font-heading text-indigo-950 leading-snug">
               Pronto a studiare? Leggi il riassunto strutturato, gira le flashcard e mettiti alla prova con il quiz! 🚀
             </p>
           </div>
@@ -146,30 +147,31 @@
     </section>
 
     <!-- CURRENT LESSON HEADER CARD -->
-    <section class="card-clay p-5 sm:p-6 bg-white">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <div class="flex items-center gap-2">
-          <span id="lessonSubject" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
+    <section class="card-clay p-4 sm:p-6 bg-white w-full">
+      <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <span id="lessonSubject" class="px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
             Storia
           </span>
-          <span id="lessonClassBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
+          <span id="lessonClassBadge" class="px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
             3ª Elementare
           </span>
         </div>
-        <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
+        <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
           <span>📚</span>
-          <span>Scegli Altra Lezione</span>
+          <span class="hidden xs:inline">Scegli Altra Lezione</span>
+          <span class="xs:hidden">Altre Lezioni</span>
         </button>
       </div>
 
-      <h2 id="lessonTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading mb-4">
+      <h2 id="lessonTitle" class="text-xl sm:text-3xl font-extrabold text-slate-900 font-heading mb-3 sm:mb-4 leading-snug">
         I Primi Uomini e la Meraviglia del Fuoco
       </h2>
 
       <!-- DRAWER: Lezioni Precaricate / Salvate -->
       <div id="lessonsDrawer" class="hidden my-4 p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold text-slate-700 font-heading text-lg">Lezioni Pronte per la 3ª Elementare:</h3>
+          <h3 class="font-bold text-slate-700 font-heading text-base sm:text-lg">Lezioni Pronte & Cronologia:</h3>
           <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm font-bold">Chiudi ✕</button>
         </div>
         <div id="demoLessonsList" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -177,35 +179,35 @@
         </div>
       </div>
 
-      <!-- TABS NAVIGATION (Big Tactile Buttons for 8-year-old hands) -->
-      <nav class="grid grid-cols-3 gap-2 sm:gap-4 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
-        <button data-tab-target="storia" class="btn-tactile btn-blue py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm">
+      <!-- TABS NAVIGATION (Big Tactile Buttons) -->
+      <nav class="grid grid-cols-3 gap-1.5 sm:gap-4 pt-2 border-t border-slate-100" aria-label="Modalità di Studio">
+        <button data-tab-target="storia" class="btn-tactile btn-blue py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-base flex items-center justify-center gap-1 sm:gap-2 shadow-sm">
           <span>📖</span>
-          <span>La Spiegazione</span>
+          <span class="truncate">Spiegazione</span>
         </button>
-        <button data-tab-target="flashcard" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+        <button data-tab-target="flashcard" class="btn-tactile btn-slate py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-base flex items-center justify-center gap-1 sm:gap-2 shadow-sm text-slate-700">
           <span>🗂️</span>
-          <span>Flashcard</span>
+          <span class="truncate">Flashcard</span>
         </button>
-        <button data-tab-target="quiz" class="btn-tactile btn-slate py-3 px-2 sm:px-4 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-sm text-slate-700">
+        <button data-tab-target="quiz" class="btn-tactile btn-slate py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-base flex items-center justify-center gap-1 sm:gap-2 shadow-sm text-slate-700">
           <span>🎯</span>
-          <span>Super Quiz</span>
+          <span class="truncate">Super Quiz</span>
         </button>
       </nav>
     </section>
 
-    <!-- TAB 1: LA SPIEGAZIONE FLUIDA (Testo continuo, omogeneo e scorrevole per la 3ª elementare) -->
-    <section id="tab-storia" class="space-y-4">
-      <div class="card-clay p-6 sm:p-8 bg-white border-blue-200">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
+    <!-- TAB 1: LA SPIEGAZIONE FLUIDA -->
+    <section id="tab-storia" class="space-y-4 w-full">
+      <div class="card-clay p-4 sm:p-8 bg-white border-blue-200 w-full">
+        <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-100">
           <div>
             <span class="text-xs font-bold text-blue-600 uppercase tracking-wider block">Racconto Didattico Completo</span>
-            <h3 class="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
+            <h3 class="text-lg sm:text-2xl font-bold text-slate-900 font-heading">
               Il Racconto della Lezione
             </h3>
           </div>
 
-          <div class="inline-flex items-center gap-2 bg-blue-50 border-2 border-blue-200 px-3.5 py-1.5 rounded-2xl text-xs font-bold text-blue-700 shadow-xs">
+          <div class="inline-flex items-center gap-1.5 sm:gap-2 bg-blue-50 border-2 border-blue-200 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl text-xs font-bold text-blue-700 shadow-xs">
             <span>📖</span>
             <span id="readingTimeBadge">Lettura semplice: ~1 min</span>
           </div>
@@ -490,7 +492,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=20"></script>
-  <script src="app.js?v=20"></script>
+  <script src="demo-data.js?v=21"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

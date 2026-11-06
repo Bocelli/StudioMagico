@@ -381,5 +381,50 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(prompt3Media.includes('3ª media') && prompt3Media.includes('argomentativo'), '3ª media prompt must have middle school argumentative tone');
   console.log('✓ Dynamic grade prompt calibration verified');
 
+  // Test N: Multi-Page Proportional Scaling Algorithm (1, 2, 3, 4+ Pages)
+  function computeMultiPageTargets(grade, numPages) {
+    let pageMultiplier = 1;
+    let paragraphBonus = 0;
+    let keyPointBonus = 0;
+    if (numPages === 2) {
+      pageMultiplier = 1.65;
+      paragraphBonus = 1;
+      keyPointBonus = 2;
+    } else if (numPages === 3) {
+      pageMultiplier = 2.25;
+      paragraphBonus = 2;
+      keyPointBonus = 4;
+    } else if (numPages >= 4) {
+      pageMultiplier = 2.85;
+      paragraphBonus = 3;
+      keyPointBonus = 6;
+    }
+    const minWords = Math.round(grade.wordCountMin * pageMultiplier);
+    const maxWords = Math.round(grade.wordCountMax * pageMultiplier);
+    const totalParagraphs = grade.paragraphs + paragraphBonus;
+    const baseKeyPoints = grade.keyPointsCount || 5;
+    const targetCount = numPages > 1 
+      ? Math.min(12, Math.max(baseKeyPoints + keyPointBonus, numPages * 2)) 
+      : baseKeyPoints;
+
+    return { minWords, maxWords, totalParagraphs, targetCount };
+  }
+
+  const p1 = computeMultiPageTargets(evaluatedProfiles['3-elem'], 1);
+  const p2 = computeMultiPageTargets(evaluatedProfiles['3-elem'], 2);
+  const p3 = computeMultiPageTargets(evaluatedProfiles['3-elem'], 3);
+  const p4 = computeMultiPageTargets(evaluatedProfiles['3-elem'], 4);
+
+  assert(p1.minWords === 120 && p1.maxWords === 180, '1-page 3-elem targets mismatch');
+  assert(p2.minWords > p1.maxWords, `2-page min words (${p2.minWords}) must exceed 1-page max words (${p1.maxWords})`);
+  assert(p4.minWords > p3.minWords && p3.minWords > p2.minWords, 'Multi-page word count must strictly increase with page count');
+  assert(p4.totalParagraphs === 6 && p1.totalParagraphs === 3, 'Paragraph count must scale with pages (from 3 to 6)');
+  assert(p4.targetCount >= 10, `4 pages must extract at least 10 flashcards/quizzes (got ${p4.targetCount})`);
+
+  // Verify that multi-page instruction is present in app.js
+  assert(appCode.includes('REGOLE TASSATIVE MULTI-PAGINA'), 'Missing multi-page prompt rules in app.js');
+  assert(appCode.includes('pageMultiplier'), 'Missing pageMultiplier logic in app.js');
+  console.log('✓ Multi-page proportional scaling verification passed (1, 2, 3, 4+ pages verified)');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
