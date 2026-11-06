@@ -1,23 +1,24 @@
-# 🚀 StudioMagico - Compagno di Studio IA per la 3ª Elementare
+# 🚀 StudioMagico - Compagno di Studio IA dalla 3ª Elementare alla 3ª Media
 
-**StudioMagico** è una webapp progettata appositamente per bambini della scuola primaria (in particolare terza elementare, 8-9 anni) che faticano con il classico e noioso metodo *"leggo e ripeto"*.
+**StudioMagico** è una webapp progettata per studenti della scuola primaria e secondaria di primo grado (dalla 3ª elementare alla 3ª media, 8-14 anni) che cercano un metodo di studio efficace, autonomo e stimolante che superi il noioso *"leggo e ripeto"*.
 
-L'app sfrutta l'**Intelligenza Artificiale gratuita (Google Gemini)** combinata con le **fotografie delle pagine del libro di scuola o del quaderno** per trasformare lo studio in un'avventura interattiva, giocosa e autonoma.
+L'app sfrutta l'**Intelligenza Artificiale gratuita (Google Gemini)** combinata con le **fotografie delle pagine del libro di scuola o del quaderno** per trasformare lo studio in un percorso interattivo, chiaro e strutturato su misura per la classe dello studente.
 
 ---
 
-## 🎯 Perché Aiuta Tuo Figlio a Studiare da Solo
+## 🎯 Perché Aiuta a Studiare da Soli
 
-1. **Addio muri di testo noiosi**: L'IA trasforma la lezione in una **spiegazione chiara, strutturata e scorrevole**, con parole semplici, frasi corte e punti focali evidenziati in grassetto per un bambino di 8 anni.
-2. **Supporto Multi-Pagina 📸**: Puoi scattare o caricare più pagine dello stesso argomento (es. pagina 42 e 43). L'IA le analizzerà in sequenza come un'unica lezione coerente!
-3. **Lettura Chiara e Indipendente 📖**: Testo calibrato per la memoria di un bambino di 3ª elementare (~1 minuto di lettura), leggero, completo e senza affaticare la vista.
-4. **Flashcard Magiche 3D 🗂️**: Carte interattive che si girano con un tocco per scoprire il significato delle parole chiave e i concetti fondamentali con icone e spiegazioni immediate.
-5. **Super Quiz Gamificato 🎯**:
+1. **Selettore della Classe Didattica (3ª Elem ➔ 3ª Media) 🎓**: L'IA adatta automaticamente il registro linguistico, la profondità dei concetti, la lunghezza del riassunto e la complessità dei quiz in base all'anno selezionato (3ª, 4ª, 5ª elementare o 1ª, 2ª, 3ª media).
+2. **Addio muri di testo noiosi**: L'IA trasforma la lezione in una **spiegazione chiara, strutturata e scorrevole**, con punti focali evidenziati in grassetto e spiegati in modo chiaro e immediato.
+3. **Supporto Multi-Pagina 📸**: Puoi scattare o caricare più pagine dello stesso argomento (es. pagina 42 e 43). L'IA le analizzerà in sequenza come un'unica lezione coerente!
+4. **Lettura Chiara e Calibrata 📖**: Testo dosato con cura (da ~1 minuto per la 3ª elementare a ~3.5 minuti per la 3ª media), completo ma senza affaticare la concentrazione.
+5. **Flashcard Magiche 3D 🗂️**: Carte interattive che si girano con un tocco per scoprire il significato delle parole chiave e i concetti fondamentali con icone e spiegazioni immediate.
+6. **Super Quiz Gamificato 🎯**:
    - Domande a risposta multipla a caratteri grandi e pulsanti facili da toccare.
    - **Nessuna frustrazione**: Se sbaglia, non riceve una croce rossa punitiva, ma un *Aiutino Magico* che lo guida a ragionare e riprovare!
    - Ricompense con **Stelline ⭐** e festeggiamenti con coriandoli animati (*Confetti*).
-6. **Diploma di Esperto 🏆**: Al termine di ogni quiz superato, viene generato un attestato ufficiale personalizzato con il titolo della lezione, stampabile o salvabile in PDF!
-7. **3 Lezioni Demo Già Pronte**: Storia (*Paleolitico e la scoperta del fuoco*), Scienze (*Il ciclo dell'acqua*) e Geografia (*I segreti della montagna*) pronte per giocare subito senza configurare nulla!
+7. **Diploma di Esperto 🏆**: Al termine di ogni quiz superato, viene generato un attestato ufficiale personalizzato con il titolo della lezione e il livello scolastico, stampabile o salvabile in PDF!
+8. **4 Lezioni Demo Già Pronte**: Storia (*Paleolitico e il fuoco*, 3ª Elem), Scienze (*Il ciclo dell'acqua*, 3ª Elem), Geografia (*I segreti della montagna*, 3ª Elem) e Scienze Medie (*La Cellula: la Fabbrica della Vita*, 1ª Media).
 
 ---
 

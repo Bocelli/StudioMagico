@@ -70,9 +70,99 @@ class SoundEffects {
   }
 }
 
+// --- Pedagogical Profiles by School Grade (3ª Elementare -> 3ª Media) ---
+const GRADE_PROFILES = {
+  '3-elem': {
+    id: '3-elem',
+    name: '3ª Elementare',
+    fullLabel: '🎒 3ª Elementare (8-9 anni)',
+    badgeTime: 'Lettura semplice: ~1 min',
+    targetAudience: 'bambini di 3ª elementare (8-9 anni) ai primi passi dello studio disciplinare',
+    toneDesc: 'Limpido, favolistico e rassicurante. Frasi brevi, metafore concrete del mondo quotidiano, nessun tecnicismo astratto senza spiegazione immediata.',
+    wordCountMin: 120,
+    wordCountMax: 180,
+    paragraphs: 3,
+    keyPointsCount: 4,
+    quizDifficulty: 'Domande dirette e intuitive con 3 opzioni corte. Aiutino affettuoso e immediato.',
+    mascotGreeting: 'Pronto a studiare? Leggi il riassunto semplice, gira le flashcard e vinci tante stelline col quiz! 🚀'
+  },
+  '4-elem': {
+    id: '4-elem',
+    name: '4ª Elementare',
+    fullLabel: '🎒 4ª Elementare (9-10 anni)',
+    badgeTime: 'Lettura guidata: ~1.5 min',
+    targetAudience: 'bambini di 4ª elementare (9-10 anni), capaci di cogliere collegamenti di causa-effetto',
+    toneDesc: 'Coinvolgente e chiaro. Metti in risalto il "perché accadono le cose" e le relazioni di causa ed effetto tra fatti storici, geografici e scientifici.',
+    wordCountMin: 160,
+    wordCountMax: 220,
+    paragraphs: 3,
+    keyPointsCount: 5,
+    quizDifficulty: 'Domande su concetti e relazioni causa-effetto con aiutino che fa riflettere sul contesto.',
+    mascotGreeting: 'Ciao! Oggi scopriamo il perché delle cose con spiegazioni chiare e quiz stimolanti! 💡'
+  },
+  '5-elem': {
+    id: '5-elem',
+    name: '5ª Elementare',
+    fullLabel: '🎒 5ª Elementare (10-11 anni)',
+    badgeTime: 'Lettura strutturata: ~2 min',
+    targetAudience: 'studenti di 5ª elementare (10-11 anni) che consolidano il metodo di studio per le medie',
+    toneDesc: 'Strutturato, ordinato e logico. Utilizza la corretta terminologia disciplinare, evidenziando nessi logici, temporali e spaziali.',
+    wordCountMin: 200,
+    wordCountMax: 260,
+    paragraphs: 4,
+    keyPointsCount: 5,
+    quizDifficulty: 'Domande che verificano la comprensione di processi completi e nessi temporali/concettuali.',
+    mascotGreeting: 'Benvenuto! Consolidiamo un grande metodo di studio: concetti ordinati, flashcard e quiz! 🎯'
+  },
+  '1-media': {
+    id: '1-media',
+    name: '1ª Media',
+    fullLabel: '📚 1ª Media (11-12 anni)',
+    badgeTime: 'Studio attivo: ~2.5 min',
+    targetAudience: 'ragazzi di 1ª media (11-12 anni) che affrontano lo studio autonomo e disciplinare',
+    toneDesc: 'Esposizione metodica, lineare e rigorosa. Linguaggio disciplinare accurato, articolazione logica per paragrafi tematici e sintesi orientata all\'esposizione orale.',
+    wordCountMin: 240,
+    wordCountMax: 310,
+    paragraphs: 4,
+    keyPointsCount: 6,
+    quizDifficulty: 'Domande di comprensione approfondita e analisi del testo con opzioni plausibili e stimolanti.',
+    mascotGreeting: 'Pronto per la scuola media? Sintesi efficace dei testi, concetti chiave e verifica immediata! 📖'
+  },
+  '2-media': {
+    id: '2-media',
+    name: '2ª Media',
+    fullLabel: '📚 2ª Media (12-13 anni)',
+    badgeTime: 'Studio approfondito: ~3 min',
+    targetAudience: 'studenti di 2ª media (12-13 anni) chiamati al pensiero critico e collegamenti interdisciplinari',
+    toneDesc: 'Analitico, maturo e scorrevole. Approfondimento dei processi storici, scientifici o letterari, evidenziando cause, svolgimento e conseguenze con spirito critico.',
+    wordCountMin: 280,
+    wordCountMax: 360,
+    paragraphs: 4,
+    keyPointsCount: 6,
+    quizDifficulty: 'Quesiti che richiedono collegamenti logici, deduzione e confronto tra fenomeni.',
+    mascotGreeting: 'Ottimo lavoro! Studio approfondito, parole chiave disciplinari e test di verifica pronti! 🔍'
+  },
+  '3-media': {
+    id: '3-media',
+    name: '3ª Media',
+    fullLabel: '🎓 3ª Media (13-14 anni)',
+    badgeTime: 'Studio esame: ~3.5 min',
+    targetAudience: 'studenti di 3ª media (13-14 anni) in preparazione all\'esame di stato e alle scuole superiori',
+    toneDesc: 'Rigoroso, argomentativo e approfondito. Enfasi sui quadri d\'insieme, collegamenti pluridisciplinari, sintesi concettuale densa ma chiara, ideale per il ripasso e l\'orale.',
+    wordCountMin: 320,
+    wordCountMax: 420,
+    paragraphs: 4,
+    keyPointsCount: 7,
+    quizDifficulty: 'Domande a livello di esame di terza media: analisi critica, sintesi concettuale e verifica delle competenze.',
+    mascotGreeting: 'Obiettivo Esame di 3ª Media: sintesi d\'alto livello, collegamenti e flashcard per spaccare! 🏆'
+  }
+};
+
 // --- Application State & Controller ---
 const App = {
   sound: new SoundEffects(),
+  GRADE_PROFILES,
+  selectedGrade: '3-elem',
   currentLesson: null,
   activeTab: 'storia', // 'storia' | 'flashcard' | 'quiz'
   uploadedImages: [], // Array of { id, dataUrl, mimeType, base64, name }
@@ -89,7 +179,10 @@ const App = {
   },
 
   init() {
+    const savedGrade = localStorage.getItem('studio_magico_grade');
+    this.selectedGrade = (savedGrade && GRADE_PROFILES[savedGrade]) ? savedGrade : '3-elem';
     this.loadStats();
+    this.initGradeSelectors();
     this.setupMascotGreetings();
     this.renderHeaderStats();
     this.bindEvents();
@@ -151,14 +244,78 @@ const App = {
     }
   },
 
+  setGrade(gradeId, syncSelects = true) {
+    if (!this.GRADE_PROFILES[gradeId]) return;
+    this.selectedGrade = gradeId;
+    localStorage.setItem('studio_magico_grade', gradeId);
+    this.sound.pop();
+    this.updateGradeUI(syncSelects);
+  },
+
+  updateGradeUI(syncSelects = true) {
+    const profile = this.GRADE_PROFILES[this.selectedGrade] || this.GRADE_PROFILES['3-elem'];
+    
+    // Sync dropdown selects
+    if (syncSelects) {
+      const headerSelect = document.getElementById('gradeSelect');
+      const modalSelect = document.getElementById('modalGradeSelect');
+      if (headerSelect && headerSelect.value !== this.selectedGrade) headerSelect.value = this.selectedGrade;
+      if (modalSelect && modalSelect.value !== this.selectedGrade) modalSelect.value = this.selectedGrade;
+    }
+
+    // Header brand subtitle
+    const brandSub = document.getElementById('brandSubtitle');
+    if (brandSub) {
+      brandSub.innerHTML = `${profile.name} • <span class="text-blue-600 font-extrabold">v3.1</span>`;
+    }
+
+    // Modal subtitle description
+    const modalDesc = document.getElementById('gradeModalDesc');
+    if (modalDesc) {
+      modalDesc.innerText = `Calibrato per ${profile.name} (${profile.badgeTime.replace('Lettura ', '').replace('Studio ', '')})`;
+    }
+
+    // Active lesson reading time badge
+    const readingBadge = document.getElementById('readingTimeBadge');
+    if (readingBadge) {
+      readingBadge.innerText = profile.badgeTime;
+    }
+
+    // Mascot greeting update
+    if (profile.mascotGreeting) {
+      this.setMascotMessage(profile.mascotGreeting);
+    }
+  },
+
+  initGradeSelectors() {
+    const headerSelect = document.getElementById('gradeSelect');
+    const modalSelect = document.getElementById('modalGradeSelect');
+
+    if (headerSelect) {
+      headerSelect.value = this.selectedGrade;
+      headerSelect.addEventListener('change', (e) => this.setGrade(e.target.value));
+    }
+    if (modalSelect) {
+      modalSelect.value = this.selectedGrade;
+      modalSelect.addEventListener('change', (e) => this.setGrade(e.target.value));
+    }
+
+    this.updateGradeUI(true);
+  },
+
   setupMascotGreetings() {
-    const greetings = [
-      "Ciao campione! Pronto a fare scoperte incredibili oggi? 🚀",
-      "Bentornato! Oggi diventeremo dei veri maestri dello studio! 💡",
-      "Non preoccuparti per la lezione: con me imparare è un gioco da ragazzi! ⭐"
-    ];
-    const randomGreet = greetings[Math.floor(Math.random() * greetings.length)];
-    this.setMascotMessage(randomGreet);
+    const profile = this.GRADE_PROFILES[this.selectedGrade] || this.GRADE_PROFILES['3-elem'];
+    if (profile.mascotGreeting) {
+      this.setMascotMessage(profile.mascotGreeting);
+    } else {
+      const greetings = [
+        "Ciao campione! Pronto a fare scoperte incredibili oggi? 🚀",
+        "Bentornato! Oggi diventeremo dei veri maestri dello studio! 💡",
+        "Non preoccuparti per la lezione: con me imparare è un gioco da ragazzi! ⭐"
+      ];
+      const randomGreet = greetings[Math.floor(Math.random() * greetings.length)];
+      this.setMascotMessage(randomGreet);
+    }
   },
 
   bindEvents() {
@@ -497,6 +654,9 @@ const App = {
     // Update Banner Info
     const titleEl = document.getElementById('lessonTitle');
     const subjectEl = document.getElementById('lessonSubject');
+    const classBadgeEl = document.getElementById('lessonClassBadge');
+    const readingBadgeEl = document.getElementById('readingTimeBadge');
+
     if (titleEl) titleEl.innerText = lesson.titolo;
     if (subjectEl) {
       subjectEl.innerText = lesson.materia || 'Lezione';
@@ -506,6 +666,14 @@ const App = {
          lesson.materia === 'Scienze' ? 'bg-cyan-100 text-cyan-800' :
          lesson.materia === 'Geografia' ? 'bg-emerald-100 text-emerald-800' :
          'bg-purple-100 text-purple-800');
+    }
+
+    const currentGradeProfile = Object.values(this.GRADE_PROFILES).find(p => p.name === lesson.classe) || this.GRADE_PROFILES[this.selectedGrade] || this.GRADE_PROFILES['3-elem'];
+    if (classBadgeEl) {
+      classBadgeEl.innerText = lesson.classe || currentGradeProfile.name;
+    }
+    if (readingBadgeEl) {
+      readingBadgeEl.innerText = currentGradeProfile.badgeTime;
     }
 
     // Render Structured Summary (Unified continuous narrative)
@@ -783,8 +951,14 @@ const App = {
     const modal = document.getElementById('diplomaModal');
     const diplomaTitle = document.getElementById('diplomaLessonTitle');
     const diplomaDate = document.getElementById('diplomaDate');
+    const diplomaLevel = document.getElementById('diplomaLevel');
+
     if (diplomaTitle) diplomaTitle.innerText = this.currentLesson.titolo;
     if (diplomaDate) diplomaDate.innerText = new Date().toLocaleDateString('it-IT');
+    if (diplomaLevel) {
+      const currentGradeName = this.currentLesson.classe || (this.GRADE_PROFILES[this.selectedGrade]?.name || '3ª Elementare');
+      diplomaLevel.innerText = `Livello: ${currentGradeName} ⭐ Super Campione`;
+    }
     if (modal) modal.classList.remove('hidden');
     if (window.confetti) {
       window.confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
@@ -817,7 +991,10 @@ const App = {
           <span class="text-3xl">${l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚'}</span>
           <div>
             <h4 class="font-bold text-slate-800 text-base md:text-lg font-heading leading-tight">${l.titolo}</h4>
-            <span class="text-xs font-bold text-slate-500 uppercase">${l.materia}</span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="text-xs font-bold text-slate-500 uppercase">${l.materia}</span>
+              ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">${l.classe}</span>` : ''}
+            </div>
           </div>
         </div>
         <span class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl">
@@ -953,55 +1130,57 @@ const App = {
         if (loadingText) loadingText.innerText = loadingSteps[stepIdx];
       }, 3000);
 
+      const grade = this.GRADE_PROFILES[this.selectedGrade] || this.GRADE_PROFILES['3-elem'];
       const totalPages = this.uploadedImages.length;
-      // Target for key points, flashcards and quiz (extract all key points, 4-8)
-      const targetCount = totalPages > 1 ? Math.min(8, Math.max(5, totalPages * 3)) : 5;
+      // Target for key points, flashcards and quiz (scaled by grade profile and total pages)
+      const baseKeyPoints = grade.keyPointsCount || 5;
+      const targetCount = totalPages > 1 ? Math.min(8, Math.max(baseKeyPoints, totalPages * 3)) : baseKeyPoints;
 
       const promptText = `
-Sei un maestro di scuola elementare specializzato nel creare racconti didattici chiari, avvincenti e facili da comprendere per bambini di 3ª elementare (8-9 anni).
-Il tuo obiettivo è analizzare TUTTI i contenuti e i punti focali delle pagine caricate e amalgamarli in un UNICO RACCONTO DIDATTICO FLUIDO E ARMONIOSO (campo "riassunto"), unendo in una sola narrazione continua sia la visione d'insieme sia la breve spiegazione di ogni singolo punto chiave!
+Sei un docente esperto specializzato nell'insegnamento per ${grade.targetAudience}.
+Il tuo obiettivo è analizzare TUTTI i contenuti e i punti focali delle pagine caricate e amalgamarli in un UNICO TESTO DI STUDIO FLUIDO E ARMONIOSO (campo "riassunto"), unendo in una sola narrazione continua sia la visione d'insieme sia la spiegazione di ogni singolo punto chiave!
 
-REGOLE TASSATIVE PER IL RACCONTO UNICO (campo "riassunto"):
-1. UNICO RACCONTO CONTINUO (NIENTE SCHEDE SEPARATE, NIENTE ELENCHI, NIENTE TITOLI STEP-BY-STEP):
-   - Scrivi un testo unitario e scorrevole suddiviso in 3 o 4 brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
+REGOLE TASSATIVE PER IL TESTO (campo "riassunto"):
+1. UNICO TESTO CONTINUO (NIENTE SCHEDE SEPARATE, NIENTE ELENCHI, NIENTE TITOLI STEP-BY-STEP):
+   - Scrivi un testo unitario e scorrevole suddiviso in ${grade.paragraphs} brevi paragrafi ben spaziati (separati da doppio a capo \\n\\n).
    - NON usare elenchi puntati o trattini (- o •).
    - NON usare sezioni rigide o etichette (niente "📌 Introduzione", "🔍 Punti focali", "💡 Conclusione").
-   - Il testo deve scorrere come una piacevole lettura per ragazzi, scorrevole e facile da leggere.
+   - Stile e tono: ${grade.toneDesc}
 
-2. TUTTI I PUNTI FOCALI AMALGAMATI CON BREVE SPIEGAZIONE:
+2. TUTTI I PUNTI FOCALI AMALGAMATI CON SPIEGAZIONE CALIBRATA:
    - Identifica TUTTI i punti focali, concetti, personaggi, mestieri, fasi o elementi presenti nelle pagine caricate (senza tralasciarne alcuno!).
-   - Inserisci e spiega ciascun punto focale all'interno del racconto con una BREVE SPIEGAZIONE semplice e limpida (1 frase corta, massimo 15 parole).
-   - Evidenzia sempre ogni termine o punto focale in **grassetto** (es. **il cartografo**, **la selce**, **l'evaporazione**) direttamente nella frase in cui viene spiegato.
+   - Inserisci e spiega ciascun punto focale all'interno del racconto con una spiegazione calibrata per ${grade.name}.
+   - Evidenzia sempre ogni termine o punto focale in **grassetto** (es. **il cartografo**, **la selce**, **la membrana cellulare**) direttamente nella frase in cui viene spiegato.
 
-3. LUNGHEZZA E LESSICO PER LA 3ª ELEMENTARE:
-   - Lunghezza totale del racconto: tra 130 e 190 parole complessive (ideale per la memoria e l'attenzione di un bambino di 8 anni: completo di tutti i punti focali ma leggero da leggere in 1 minuto e mezzo).
-   - Frasi corte, lessico semplice, tono caldo e incoraggiante.
+3. LUNGHEZZA E LESSICO PER ${grade.name.toUpperCase()}:
+   - Lunghezza totale del testo: tra ${grade.wordCountMin} e ${grade.wordCountMax} parole complessive (calibrato per l'attenzione e la memoria di ${grade.name}).
    - Niente formule infantili finte ("Ciao sono Leo", "C'era una volta").
 
 REQUISITI PER FLASHCARD E SUPER QUIZ:
-- "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, con ciascun punto focale (termine, emoji simpatica e spiegazione in una frase semplice).
-- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un aiutino amichevole per verificare la comprensione.
+- "parole_chiave": ${targetCount} flashcard per il ripasso interattivo, con ciascun punto focale (termine, emoji simpatica e spiegazione adatta a ${grade.name}).
+- "quiz": ${targetCount} domande a risposta multipla con 3 opzioni (una sola corretta) e un aiutino per verificare la comprensione (${grade.quizDifficulty}).
 
-${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Unisci e spiega tutti i punti focali di tutte le ${totalPages} pagine in questo unico racconto!` : ''}
+${totalPages > 1 ? `ATTENZIONE MULTI-PAGINA: Sono state caricate ${totalPages} pagine. Unisci e spiega tutti i punti focali di tutte le ${totalPages} pagine in questo unico testo!` : ''}
 
 Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
 {
   "titolo": "Titolo chiaro e corretto della lezione",
   "materia": "Storia | Scienze | Geografia | Italiano | Altro",
-  "riassunto": "Primo paragrafo continuo che introduce l'argomento generale e i primi **punti focali** spiegandoli con frasi corte...\\n\\nSecondo paragrafo continuo che prosegue il racconto spiegando gli altri **punti chiave** e il loro ruolo...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude il racconto in modo armonioso...",
+  "classe": "${grade.name}",
+  "riassunto": "Primo paragrafo continuo che introduce l'argomento generale e i primi **punti focali**...\\n\\nSecondo paragrafo continuo che prosegue la spiegazione con i successivi **punti chiave**...\\n\\nTerzo paragrafo continuo che completa la lezione e conclude il testo in modo armonioso...",
   "parole_chiave": [
     {
       "termine": "Nome del punto focale",
       "emoji": "Icona adatta",
-      "spiegazione": "Breve spiegazione in una frase chiara per un bimbo di 8 anni."
+      "spiegazione": "Spiegazione chiara calibrata per ${grade.name}."
     }
   ],
   "quiz": [
     {
-      "domanda": "Domanda chiara per verificare la comprensione?",
+      "domanda": "Domanda per verificare la comprensione?",
       "opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"],
       "risposta_corretta": 0,
-      "indizio": "Un aiutino semplice per ragionare."
+      "indizio": "Un aiutino per ragionare."
     }
   ]
 }
@@ -1183,6 +1362,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       parsedLesson.id = 'custom-' + Date.now();
       // Ensure compatibility for both riassunto and storia_semplice
       parsedLesson.riassunto = parsedLesson.riassunto || parsedLesson.storia_semplice || '';
+      parsedLesson.classe = parsedLesson.classe || (this.GRADE_PROFILES[this.selectedGrade]?.name || '3ª Elementare');
       parsedLesson.storia_semplice = parsedLesson.riassunto;
 
       // Save to localStorage
@@ -1204,7 +1384,7 @@ Rispondi ESCLUSIVAMENTE con un JSON con la seguente struttura:
       this.loadLesson(parsedLesson);
       this.renderSavedLessonsList();
       this.switchTab('storia');
-      this.setMascotMessage("Evviva! Ho preparato la spiegazione della lezione, le flashcard e i quiz! 🚀", true);
+      this.setMascotMessage("Evviva! Ho preparato la spiegazione della lezione, le flashcard e i quiz! 🚀");
 
     } catch (err) {
       this.sound.hint();

@@ -1,9 +1,10 @@
-// demo-data.js - Lezioni di esempio precaricate per la 3ª elementare
+// demo-data.js - Lezioni di esempio precaricate per la scuola primaria e secondaria
 window.DEMO_LESSONS = [
   {
     id: "storia-fuoco",
     titolo: "I Primi Uomini e la Meraviglia del Fuoco",
     materia: "Storia",
+    classe: "3ª Elementare",
     icona: "flame",
     colore: "amber",
     storia_semplice: "Tanto, tantissimo tempo fa, nel periodo chiamato Paleolitico, gli esseri umani vivevano all'aperto o dentro caverne buie e fredde. All'inizio avevano una paura matta del fuoco, perché lo vedevano solo quando un fulmine colpiva un albero facendolo bruciare!\n\nUn giorno, però, un cacciatore coraggioso prese un ramo infuocato e scoprì una cosa straordinaria: il fuoco riscaldava nelle notti gelide, illuminava il buio e teneva lontane le tigri e gli orsi feroci, che ne avevano molta paura!\n\nPiù tardi, gli uomini scoprirono il segreto più grande: potevano accendere il fuoco da soli! Come facevano? Battevano forte tra loro due pietre speciali (la pirite e la selce) finché non scoccava una scintilla su foglie secche. Da quel momento, le famiglie si riunivano attorno al fuoco per scaldarsi, arrostire la carne e raccontarsi storie. Era nata la prima vera casa!",
@@ -81,6 +82,7 @@ window.DEMO_LESSONS = [
     id: "scienze-acqua",
     titolo: "Il Grande Viaggio della Gocciolina Goccia",
     materia: "Scienze",
+    classe: "3ª Elementare",
     icona: "droplet",
     colore: "cyan",
     storia_semplice: "L'acqua sulla Terra non sta mai ferma: è una grandissima viaggiatrice che non si stanca mai!\n\nImmagina una gocciolina di nome Goccia che nuota felice nel mare. Quando il Sole splendente la riscalda con i suoi raggi caldi, Goccia diventa così leggera che si trasforma in vapore invisibile e sale in alto nel cielo: questa magia si chiama EVAPORAZIONE!\n\nLassù nel cielo fa freddo, brrr! Così Goccia ritrova tante altre amiche goccioline, si abbracciano strette strette e formano una soffice nuvola bianca: questa è la CONDENSAZIONE.\n\nQuando la nuvola diventa troppo pesante e piena d'acqua, le goccioline cadono giù sulla terra sotto forma di pioggia, o se fa freddissimo sotto forma di soffice neve: ecco la PRECIPITAZIONE! Goccia scivola giù per la montagna, entra in un ruscello, poi in un grande fiume e torna di nuovo nel mare... pronta per ricominciare il giro!",
@@ -148,6 +150,7 @@ window.DEMO_LESSONS = [
     id: "geografia-montagna",
     titolo: "I Segreti dell'Alta Montagna",
     materia: "Geografia",
+    classe: "3ª Elementare",
     icona: "mountain",
     colore: "emerald",
     storia_semplice: "La montagna è un rilievo grandioso della terra che supera i 600 metri di altezza. È come una piramide gigante della natura!\n\nSe partiamo dal basso, ai 'piedi' della montagna, troviamo boschi verdi di querce e castagni, dove corrono lepri e scoiattoli. Salendo lungo il pendio (il versante), l'aria diventa più fresca e i boschi cambiano: arrivano gli abeti e i pini, con il loro profumo di resina.\n\nPiù saliamo in alto, più fa freddo e c'è vento! Sopra i 2000 metri gli alberi non riescono più a vivere: ci sono solo verdi prati d'alta quota dove pascolano le mucche e fischiano le marmotte! E sulla cima più alta, detta VETTA, ci sono rocce aguzze, nevi perenni e ghiacciai dove vola fiera l'aquila reale.",
@@ -210,5 +213,88 @@ window.DEMO_LESSONS = [
       "L'Everest, la montagna più alta del mondo, cresce ancora di circa 4 millimetri ogni anno perché i continenti della Terra continuano a spingere!"
     ],
     sfida_veloce: "Alzati in piedi, allarga le braccia e fai il fischio della marmotta per dare l'allarme! Marmotta in salvo!"
+  },
+  {
+    id: "scienze-cellula-media",
+    titolo: "La Cellula: la Fabbrica della Vita",
+    materia: "Scienze",
+    classe: "1ª Media",
+    icona: "dna",
+    colore: "purple",
+    storia_semplice: "Tutti gli organismi viventi sul nostro pianeta, dal microscopico batterio fino all'essere umano, sono composti da una o più unità fondamentali: le cellule. Ogni cellula è paragonabile a una vera e propria fabbrica chimica autosufficiente, in grado di respirare, nutrirsi, produrre energia e riprodursi.\n\nLa struttura base di ogni cellula comprende tre componenti essenziali. All'esterno troviamo la **membrana cellulare**, un sottile involucro selettivo che protegge la cellula e regola il passaggio delle sostanze nutritive verso l'interno e l'eliminazione dei rifiuti verso l'esterno. All'interno si trova il **citoplasma**, una sostanza gelatinosa ricca d'acqua in cui sono immersi i vari organuli cellulari, tra cui i **mitocondri**, considerate le centrali energetiche che forniscono combustibile vitale attraverso la respirazione cellulare.\n\nAl centro della cellula risiede il centro direzionale supremo: il **nucleo cellulare**. Il nucleo è protetto da una membrana nucleare e custodisce il patrimonio genetico dell'organismo sotto forma di **DNA**, la molecola a doppia elica che contiene tutte le istruzioni ereditarie per costruire e far funzionare l'essere vivente.\n\nEsiste inoltre una distinzione fondamentale tra la cellula animale e la **cellula vegetale**: quest'ultima possiede due strutture esclusive fondamentali, la rigida **parete cellulare** esterna formata da cellulosa e i **cloroplasti**, minuscoli laboratori verdi contenenti clorofilla in cui si compie la **fotosintesi clorofilliana**, il processo biochimico che trasforma luce solare, anidride carbonica e acqua in zuccheri e ossigeno.",
+    parole_chiave: [
+      {
+        termine: "Membrana Cellulare",
+        emoji: "🛡️",
+        spiegazione: "Rivestimento semipermeabile che delimita la cellula, selezionando le sostanze in entrata e in uscita."
+      },
+      {
+        termine: "Citoplasma",
+        emoji: "🧪",
+        spiegazione: "Massa gelatinosa acquosa in cui avvengono le principali reazioni biochimiche e risiedono gli organuli."
+      },
+      {
+        termine: "Nucleo e DNA",
+        emoji: "🧬",
+        spiegazione: "La centrale di controllo della cellula che custodisce il codice genetico ereditario a doppia elica."
+      },
+      {
+        termine: "Mitocondri",
+        emoji: "⚡",
+        spiegazione: "Gli organuli addetti alla respirazione cellulare che generano l'energia necessaria alla vita cellulare."
+      },
+      {
+        termine: "Cloroplasti e Fotosintesi",
+        emoji: "🌿",
+        spiegazione: "Organuli presenti nelle cellule vegetali contenenti clorofilla per convertire la luce solare in nutrimento e ossigeno."
+      }
+    ],
+    quiz: [
+      {
+        domanda: "Qual è la funzione primaria della membrana cellulare?",
+        opzioni: [
+          "Regolare in modo selettivo lo scambio di sostanze tra interno ed esterno",
+          "Distruggere il patrimonio genetico della cellula",
+          "Produrre luce fluorescente per attirare altre cellule"
+        ],
+        risposta_corretta: 0,
+        indizio: "Funziona come una porta selettiva con un guardiano all'ingresso!"
+      },
+      {
+        domanda: "Dove si trova custodito il patrimonio ereditario (DNA) in una cellula eucariote?",
+        opzioni: [
+          "All'esterno della membrana cellulare",
+          "Nel nucleo cellulare, la centrale di controllo",
+          "Dentro le molecole di vapore acqueo"
+        ],
+        risposta_corretta: 1,
+        indizio: "È il 'cervello' centrale racchiuso da una membrana nucleare."
+      },
+      {
+        domanda: "Quale organulo esclusivo delle cellule vegetali permette la fotosintesi clorofilliana?",
+        opzioni: [
+          "I cloroplasti contenenti clorofilla",
+          "I soli mitocondri animali",
+          "I globuli rossi"
+        ],
+        risposta_corretta: 0,
+        indizio: "Contengono il pigmento verde che assorbe la luce del Sole!"
+      },
+      {
+        domanda: "Qual è il compito fondamentale svolto dai mitocondri?",
+        opzioni: [
+          "Funzionare da riserva di sabbia",
+          "Produrre energia per la cellula attraverso la respirazione cellulare",
+          "Cancellare le informazioni del DNA"
+        ],
+        risposta_corretta: 1,
+        indizio: "Sono considerate le vere 'centrali energetiche' cellulari."
+      }
+    ],
+    curiosita: [
+      "Il corpo umano di un ragazzo delle medie è composto da circa 30.000 miliardi di cellule che lavorano in perfetta sincronia!",
+      "I mitocondri possiedono un proprio piccolo DNA indipendente, ereditato quasi esclusivamente dalla madre."
+    ],
+    sfida_veloce: "Chiudi gli occhi e immagina una cellula come una città fortificata: la membrana sono le mura, il nucleo è il municipio e i mitocondri sono la centrale elettrica!"
   }
 ];

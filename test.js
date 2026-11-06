@@ -32,6 +32,9 @@ function validateLesson(lesson) {
   assert(lesson && typeof lesson === 'object', 'Lesson must be an object');
   assert(typeof lesson.titolo === 'string' && lesson.titolo.length > 0, 'Titolo must be non-empty string');
   assert(typeof lesson.materia === 'string', 'Materia must be string');
+  if (lesson.classe !== undefined) {
+    assert(typeof lesson.classe === 'string' && lesson.classe.length > 0, 'Classe must be non-empty string when present');
+  }
   const summaryContent = lesson.riassunto || lesson.storia_semplice;
   assert(typeof summaryContent === 'string' && summaryContent.length > 20, 'Summary/storia must be descriptive string');
   assert(Array.isArray(lesson.parole_chiave) && lesson.parole_chiave.length >= 2, 'Must have at least 2 parole chiave');
@@ -328,6 +331,55 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   const keyPointsHtml = renderKeyPointsHtml(sampleKeyPoints);
   assert(keyPointsHtml.includes('Il Fotografo') && keyPointsHtml.includes('Scatta fotografie'), 'Key points HTML generation failed');
   console.log(`✓ Key points with brief explanation verification & renderer passed (${sampleKeyPoints.length} points)`);
+
+  // Test K: Multi-Grade Pedagogical Profiles (3ª Elementare -> 3ª Media)
+  const fs = require('fs');
+  const appCode = fs.readFileSync('app.js', 'utf8');
+  assert(appCode.includes("'3-elem'") && appCode.includes("'3-media'"), 'Grade keys missing from app.js');
+  
+  // Extract GRADE_PROFILES from app.js for isolated unit testing
+  const gradeProfilesMatch = appCode.match(/const GRADE_PROFILES = ({[\s\S]*?});\n\n\/\/ --- Application/);
+  assert(gradeProfilesMatch && gradeProfilesMatch[1], 'Could not extract GRADE_PROFILES from app.js');
+  const evaluatedProfiles = eval('(' + gradeProfilesMatch[1] + ')');
+  
+  const expectedGrades = ['3-elem', '4-elem', '5-elem', '1-media', '2-media', '3-media'];
+  expectedGrades.forEach(gKey => {
+    const prof = evaluatedProfiles[gKey];
+    assert(prof, `Missing profile for ${gKey}`);
+    assert(typeof prof.name === 'string' && prof.name.length > 0, `${gKey} missing name`);
+    assert(typeof prof.targetAudience === 'string' && prof.targetAudience.length > 10, `${gKey} missing targetAudience`);
+    assert(typeof prof.badgeTime === 'string' && prof.badgeTime.includes('min'), `${gKey} missing badgeTime`);
+    assert(prof.wordCountMin < prof.wordCountMax, `${gKey} wordCountMin must be < wordCountMax`);
+    assert(prof.paragraphs >= 3, `${gKey} must have at least 3 paragraphs`);
+    assert(prof.keyPointsCount >= 4, `${gKey} must have at least 4 key points`);
+  });
+
+  // Verify proportional pedagogical scaling
+  assert(evaluatedProfiles['3-media'].wordCountMax > evaluatedProfiles['1-media'].wordCountMax, '3ª media max word count should be greater than 1ª media');
+  assert(evaluatedProfiles['1-media'].wordCountMax > evaluatedProfiles['5-elem'].wordCountMax, '1ª media max word count should be greater than 5ª elem');
+  assert(evaluatedProfiles['5-elem'].wordCountMax > evaluatedProfiles['3-elem'].wordCountMax, '5ª elem max word count should be greater than 3ª elem');
+  console.log(`✓ Multi-Grade profiles integrity and progressive scaling passed (${expectedGrades.length} grades)`);
+
+  // Test L: Middle School Demo Lesson Validation
+  const demoCode = fs.readFileSync('demo-data.js', 'utf8');
+  assert(demoCode.includes('scienze-cellula-media'), '1ª Media demo lesson missing in demo-data.js');
+  const win = {};
+  eval(demoCode.replace(/window/g, 'win'));
+  const mediaDemo = win.DEMO_LESSONS.find(l => l.id === 'scienze-cellula-media');
+  assert(mediaDemo, 'Could not find 1ª Media demo lesson');
+  assert(mediaDemo.classe === '1ª Media', '1ª Media demo lesson has wrong classe tag');
+  assert(validateLesson(mediaDemo) === true, '1ª Media demo lesson failed schema validation');
+  console.log('✓ 1ª Media demo lesson validation passed');
+
+  // Test M: Dynamic Grade Prompt Calibration
+  function buildGradePromptSnippet(grade) {
+    return `Sei un docente esperto specializzato nell'insegnamento per ${grade.targetAudience}. Stile: ${grade.toneDesc}. Parole: tra ${grade.wordCountMin} e ${grade.wordCountMax}.`;
+  }
+  const prompt3Elem = buildGradePromptSnippet(evaluatedProfiles['3-elem']);
+  const prompt3Media = buildGradePromptSnippet(evaluatedProfiles['3-media']);
+  assert(prompt3Elem.includes('3ª elementare') && prompt3Elem.includes('favolistico'), '3ª elementare prompt must have elementary tone');
+  assert(prompt3Media.includes('3ª media') && prompt3Media.includes('argomentativo'), '3ª media prompt must have middle school argumentative tone');
+  console.log('✓ Dynamic grade prompt calibration verified');
 
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

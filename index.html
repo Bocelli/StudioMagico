@@ -56,12 +56,23 @@
           <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-indigo-950 font-heading leading-tight">
             Studio<span class="text-blue-600">Magico</span>
           </h1>
-          <span class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v3.0 (Lettura Chiara, Flashcard & Quiz)</span></span>
+          <span id="brandSubtitle" class="text-[11px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">3ª Elementare • <span class="text-blue-600 font-extrabold">v3.1</span></span>
         </div>
       </div>
 
       <!-- Center & Right Stats and Actions -->
-      <div class="flex items-center gap-2 sm:gap-4">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Grade Selector (3ª Elem to 3ª Media) -->
+        <div class="relative inline-flex items-center">
+          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2.5 sm:px-3 rounded-2xl outline-none cursor-pointer transition-colors shadow-xs">
+            <option value="3-elem">🎒 3ª Elementare (8-9 anni)</option>
+            <option value="4-elem">🎒 4ª Elementare (9-10 anni)</option>
+            <option value="5-elem">🎒 5ª Elementare (10-11 anni)</option>
+            <option value="1-media">📚 1ª Media (11-12 anni)</option>
+            <option value="2-media">📚 2ª Media (12-13 anni)</option>
+            <option value="3-media">🎓 3ª Media (13-14 anni)</option>
+          </select>
+        </div>
         <!-- Stars Counter -->
         <div id="headerStars" class="bg-amber-100/80 border-2 border-amber-300 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
           <span class="text-xl">⭐</span>
@@ -137,9 +148,14 @@
     <!-- CURRENT LESSON HEADER CARD -->
     <section class="card-clay p-5 sm:p-6 bg-white">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <span id="lessonSubject" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
-          Storia
-        </span>
+        <div class="flex items-center gap-2">
+          <span id="lessonSubject" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
+            Storia
+          </span>
+          <span id="lessonClassBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
+            3ª Elementare
+          </span>
+        </div>
         <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
           <span>📚</span>
           <span>Scegli Altra Lezione</span>
@@ -191,7 +207,7 @@
 
           <div class="inline-flex items-center gap-2 bg-blue-50 border-2 border-blue-200 px-3.5 py-1.5 rounded-2xl text-xs font-bold text-blue-700 shadow-xs">
             <span>📖</span>
-            <span>Lettura semplice: ~1 minuto</span>
+            <span id="readingTimeBadge">Lettura semplice: ~1 min</span>
           </div>
         </div>
 
@@ -257,8 +273,27 @@
         <button id="closeUploadBtn" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1">✕</button>
       </div>
 
+      <!-- Grade Selector in Upload Modal -->
+      <div class="mb-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200/80 p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 shadow-xs">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl flex-shrink-0">🎓</span>
+          <div>
+            <label for="modalGradeSelect" class="block text-xs font-bold text-indigo-950 uppercase tracking-wider">Classe di Studio:</label>
+            <p id="gradeModalDesc" class="text-xs text-indigo-700 font-medium">Calibrato per 3ª Elementare (8-9 anni)</p>
+          </div>
+        </div>
+        <select id="modalGradeSelect" class="bg-white border-2 border-indigo-300 text-indigo-950 font-bold text-xs sm:text-sm py-1.5 px-3 rounded-xl outline-none cursor-pointer shadow-xs">
+          <option value="3-elem">🎒 3ª Elementare</option>
+          <option value="4-elem">🎒 4ª Elementare</option>
+          <option value="5-elem">🎒 5ª Elementare</option>
+          <option value="1-media">📚 1ª Media</option>
+          <option value="2-media">📚 2ª Media</option>
+          <option value="3-media">🎓 3ª Media</option>
+        </select>
+      </div>
+
       <p class="text-sm text-slate-600 font-medium mb-5">
-        Fotografa la pagina del sussidiario o quaderno: l'IA la trasformerà istantaneamente in una storia, flashcard e quiz adatti alla 3ª elementare!
+        Fotografa la pagina del libro o quaderno: l'IA la trasformerà in un riassunto, flashcard e quiz calibrati esattamente per la classe scelta!
       </p>
 
       <!-- Dropzone / Image Picker -->
@@ -433,7 +468,7 @@
         <h3 id="diplomaLessonTitle" class="text-xl sm:text-2xl font-bold text-indigo-900 font-heading">
           I Primi Uomini e la Meraviglia del Fuoco
         </h3>
-        <p class="text-xs font-bold text-amber-600 mt-1">Livello: Terza Elementare ⭐ Super Campione</p>
+        <p id="diplomaLevel" class="text-xs font-bold text-amber-600 mt-1">Livello: 3ª Elementare ⭐ Super Campione</p>
       </div>
 
       <div class="flex items-center justify-around border-t border-b border-amber-200 py-3 mb-6 max-w-sm mx-auto text-xs font-bold text-slate-600">
@@ -455,7 +490,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=19"></script>
-  <script src="app.js?v=19"></script>
+  <script src="demo-data.js?v=20"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>
