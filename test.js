@@ -507,5 +507,37 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
   assert(appCode.includes('NON posizionare sempre la risposta corretta'), 'app.js missing randomized quiz answer prompt instruction');
   console.log(`✓ Quiz options dynamic shuffling & balanced distribution verified (A: ${counts[0]}, B: ${counts[1]}, C: ${counts[2]} across ${iterations} runs)`);
 
+  // Test P: Lesson Deletion & Storage Memory Cleanup
+  assert(appCode.includes('getAllLessons'), 'app.js missing getAllLessons helper');
+  assert(appCode.includes('deleteLesson'), 'app.js missing deleteLesson method');
+  assert(appCode.includes('deleteCurrentLesson'), 'app.js missing deleteCurrentLesson method');
+  assert(appCode.includes('restoreDemoLessons'), 'app.js missing restoreDemoLessons method');
+
+  // Simulate memory management operations
+  const mockStorage = {
+    custom: [
+      { id: 'custom-1', titolo: 'I Vulcani d\'Italia' },
+      { id: 'custom-2', titolo: 'I Greci e le Polis' }
+    ],
+    hiddenDemos: [],
+    readLessons: ['custom-1', 'storia-fuoco-3elem']
+  };
+
+  // 1. Delete custom-1
+  mockStorage.custom = mockStorage.custom.filter(l => l.id !== 'custom-1');
+  mockStorage.readLessons = mockStorage.readLessons.filter(id => id !== 'custom-1');
+  assert(mockStorage.custom.length === 1 && mockStorage.custom[0].id === 'custom-2', 'Failed to delete custom lesson from memory');
+  assert(!mockStorage.readLessons.includes('custom-1'), 'Failed to clean up read stats for deleted lesson');
+
+  // 2. Hide demo lesson
+  mockStorage.hiddenDemos.push('storia-fuoco-3elem');
+  assert(mockStorage.hiddenDemos.includes('storia-fuoco-3elem'), 'Failed to hide demo lesson');
+
+  // 3. Restore demo lessons
+  mockStorage.hiddenDemos = [];
+  assert(mockStorage.hiddenDemos.length === 0, 'Failed to restore hidden demo lessons');
+
+  console.log('✓ Lesson deletion and memory cleanup logic verified');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();

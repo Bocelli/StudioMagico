@@ -2,23 +2,26 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.3 (Quiz Dynamic Answer Shuffling & Anti-Bias Distribution)  
+> **Stato Rilascio:** v3.4 (Lesson Deletion & Storage Memory Management)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico)**:
-   - *Problema rilevato dall'utente*: nei quiz generati dall'IA la risposta vera si trovava **sempre e solo come prima opzione (lettera A)**, permettendo all'alunno di indovinare senza leggere o riflettere.
-   - *Causa radice*: il prompt per Gemini conteneva nello schema JSON di esempio la dicitura `"opzioni": ["Opzione corretta", "Opzione sbagliata 1", "Opzione sbagliata 2"], "risposta_corretta": 0`, portando l'LLM a replicare pedissequamente la prima posizione per default.
+1. **Pulsante Cancella / Gestione Memoria Lezioni Studiate**:
+   - *Problema rilevato dall'utente*: le lezioni caricate ed elaborate (o già studiate) restavano memorizzate nel browser senza alcuna possibilità di eliminarle per fare spazio e tenere ordinato lo storico.
    - *Soluzione*:
-     - Algoritmo di Fisher-Yates (`shuffleLessonQuiz`) integrato direttamente in runtime all'interno di `app.js`: ogni opzione viene tracciata con il flag di correttezza, mescolata casualmente e riassociata al nuovo indice `risposta_corretta`.
-     - Shuffling automatico al caricamento della lezione (`loadLesson`), all'analisi IA e alla pressione del pulsante "Riprova il Quiz" (`restartQuiz`) per prevenire l'apprendimento mnemonico.
-     - Aggiornamento delle istruzioni di sistema nel prompt Gemini con divieto esplicito di fissare la risposta in posizione A e variazione bilanciata tra 0, 1 e 2.
-2. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
-   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x, espansione paragrafi, estensione target flashcard e quiz da 5 fino a 12).
-3. **Risoluzione Bug Layout Mobile (v3.2)**:
-   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato, eliminazione dello spazio bianco vuoto su schermi smartphone.
+     - Inserito il pulsante dedicato `🗑️ Cancella` su ciascuna scheda nel drawer *"Scegli Altra Lezione"* (`#demoLessonsList`), con dialog di conferma di sicurezza per evitare cancellazioni involontarie del bambino.
+     - Inserito il pulsante rapido `🗑️ Cancella` anche nell'intestazione della lezione attualmente aperta.
+     - Rimozione chirurgica dal `localStorage` (`studio_magico_custom_lessons` per le lezioni custom, `studio_magico_hidden_demos` per nascondere le demo già studiate) e pulizia contestuale dalla cronologia di lettura (`readLessons`).
+     - Cambio automatico e fluido alla lezione rimanente successiva nel caso in cui venga cancellata la lezione attiva.
+     - Aggiunto link per ripristinare le lezioni demo di base qualora venissero nascoste.
+2. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
+   - Algoritmo di Fisher-Yates per distribuire casualmente ed equamente le risposte esatte tra A, B e C, sia all'avvio sia alla pressione di "Riprova il Quiz".
+3. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
+   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x, estensione flashcard e quiz).
+4. **Risoluzione Bug Layout Mobile (v3.2)**:
+   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato, eliminazione dello spazio bianco vuoto su smartphone.
 
 ---
 
@@ -96,6 +99,7 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 - **Test M**: Verifica della composizione dinamica del prompt IA in funzione della classe.
 - **Test N**: Validazione dell'algoritmo di scalabilità proporzionale multi-pagina (1, 2, 3, 4+ pagine) per parole min/max, paragrafi e target flashcard/quiz.
 - **Test O**: Verifica dinamica dello shuffler delle opzioni quiz (algoritmo di Fisher-Yates, conservazione rigorosa della risposta esatta, verifica della distribuzione casuale equilibrata tra le opzioni A, B e C su 150 iterazioni).
+- **Test P**: Validazione della cancellazione lezioni (`deleteLesson`, `deleteCurrentLesson`, `restoreDemoLessons`) e della pulizia sincronizzata di storage e statistiche.
 
 ---
 
@@ -124,6 +128,7 @@ Tramite il comando `agent-reach web search`, sono state analizzate le soluzioni 
 ✓ 1ª Media demo lesson validation passed
 ✓ Dynamic grade prompt calibration verified
 ✓ Multi-page proportional scaling verification passed (1, 2, 3, 4+ pages verified)
-✓ Quiz options dynamic shuffling & balanced distribution verified (A: 52, B: 46, C: 52 across 150 runs)
+✓ Quiz options dynamic shuffling & balanced distribution verified (A: 42, B: 56, C: 52 across 150 runs)
+✓ Lesson deletion and memory cleanup logic verified
 --- ALL CHECKS PASSED (Ponytail Approved) ---
 ```

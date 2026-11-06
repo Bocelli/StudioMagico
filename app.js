@@ -187,8 +187,11 @@ const App = {
     this.renderHeaderStats();
     this.bindEvents();
 
-    // Load first demo lesson by default so the app is immediately alive!
-    if (window.DEMO_LESSONS && window.DEMO_LESSONS.length > 0) {
+    // Load first available lesson (custom or demo) so the app is immediately alive!
+    const all = this.getAllLessons();
+    if (all.length > 0) {
+      this.loadLesson(all[0]);
+    } else if (window.DEMO_LESSONS && window.DEMO_LESSONS.length > 0) {
       this.loadLesson(window.DEMO_LESSONS[0]);
     }
     this.renderSavedLessonsList();
@@ -1018,11 +1021,8 @@ const App = {
     if (modal) modal.classList.add('hidden');
   },
 
-  // --- Saved Lessons & History ---
-  renderSavedLessonsList() {
-    const list = document.getElementById('demoLessonsList');
-    if (!list) return;
-
+  // --- Saved Lessons, Memory & History Management ---
+  getAllLessons() {
     let saved = [];
     try {
       saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
@@ -1030,42 +1030,176 @@ const App = {
       saved = [];
     }
 
-    const allLessons = [...(window.DEMO_LESSONS || []), ...saved];
+    let hiddenDemos = [];
+    try {
+      hiddenDemos = JSON.parse(localStorage.getItem('studio_magico_hidden_demos') || '[]');
+    } catch (e) {
+      hiddenDemos = [];
+    }
 
-    list.innerHTML = allLessons.map(l => `
-      <div onclick="App.loadLessonById('${l.id}')" 
-           class="card-clay p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between transition-all ${this.currentLesson && this.currentLesson.id === l.id ? 'border-2 border-blue-500 bg-blue-50/40' : 'bg-white'}">
-        <div class="flex items-center gap-3">
-          <span class="text-3xl">${l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚'}</span>
-          <div>
-            <h4 class="font-bold text-slate-800 text-base md:text-lg font-heading leading-tight">${l.titolo}</h4>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="text-xs font-bold text-slate-500 uppercase">${l.materia}</span>
-              ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">${l.classe}</span>` : ''}
+    const visibleDemos = (window.DEMO_LESSONS || []).filter(d => !hiddenDemos.includes(d.id));
+
+    // Custom user lessons first (most recent first), then default demo lessons
+    return [...saved, ...visibleDemos];
+  },
+
+  renderSavedLessonsList() {
+    const list = document.getElementById('demoLessonsList');
+    if (!list) return;
+
+    const allLessons = this.getAllLessons();
+
+    let hiddenDemos = [];
+    try {
+      hiddenDemos = JSON.parse(localStorage.getItem('studio_magico_hidden_demos') || '[]');
+    } catch (e) {
+      hiddenDemos = [];
+    }
+
+    if (allLessons.length === 0) {
+      list.innerHTML = `
+        <div class="col-span-full p-6 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
+          <p class="text-slate-500 font-bold mb-3">Nessuna lezione salvata nella memoria.</p>
+          <button onclick="App.restoreDemoLessons()" class="btn-tactile btn-blue text-xs font-bold px-4 py-2 rounded-xl text-white">
+            🔄 Ripristina lezioni demo di base
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    let html = allLessons.map(l => {
+      const isCurrent = this.currentLesson && this.currentLesson.id === l.id;
+      const isCustom = l.id && l.id.toString().startsWith('custom-');
+      const isRead = this.stats && this.stats.readLessons && this.stats.readLessons.includes(l.id);
+      const icon = l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚';
+
+      return `
+        <div onclick="App.loadLessonById('${l.id}')" 
+             class="card-clay p-3 sm:p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between gap-2 transition-all ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/50 shadow-sm' : 'bg-white'}">
+          <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <span class="text-2xl sm:text-3xl flex-shrink-0">${icon}</span>
+            <div class="min-w-0 flex-1">
+              <h4 class="font-bold text-slate-800 text-sm sm:text-base font-heading leading-tight truncate" title="${l.titolo}">${l.titolo}</h4>
+              <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span class="text-[10px] font-bold text-slate-500 uppercase">${l.materia}</span>
+                ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">${l.classe}</span>` : ''}
+                ${isCustom ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">📸 Tua Lezione</span>` : ''}
+                ${isRead ? `<span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Studiata</span>` : ''}
+              </div>
             </div>
           </div>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
+                    title="Cancella dalla memoria" 
+                    class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-200 text-red-600 font-bold text-xs flex items-center gap-1 transition-colors"
+                    aria-label="Cancella lezione">
+              <span>🗑️</span>
+              <span class="hidden sm:inline">Cancella</span>
+            </button>
+            <span class="btn-tactile ${isCurrent ? 'btn-blue text-white' : 'btn-slate text-slate-700'} text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center">
+              ${isCurrent ? 'Attiva' : 'Apri ➔'}
+            </span>
+          </div>
         </div>
-        <span class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl">
-          Apri ➔
-        </span>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    if (hiddenDemos.length > 0) {
+      html += `
+        <div class="col-span-full pt-2 flex justify-end">
+          <button onclick="App.restoreDemoLessons()" class="text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold flex items-center gap-1">
+            <span>🔄</span>
+            <span>Ripristina le ${hiddenDemos.length} lezioni demo nascoste</span>
+          </button>
+        </div>
+      `;
+    }
+
+    list.innerHTML = html;
   },
 
   loadLessonById(id) {
     this.sound.pop();
-    let saved = [];
-    try {
-      saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
-    } catch (e) {}
-
-    const allLessons = [...(window.DEMO_LESSONS || []), ...saved];
+    const allLessons = this.getAllLessons();
     const found = allLessons.find(l => l.id === id);
     if (found) {
       this.loadLesson(found);
       this.renderSavedLessonsList();
       this.switchTab('storia');
+      // Auto-close drawer on selection
+      const drawer = document.getElementById('lessonsDrawer');
+      if (drawer) drawer.classList.add('hidden');
     }
+  },
+
+  deleteLesson(id) {
+    const all = this.getAllLessons();
+    const target = all.find(l => l.id === id);
+    if (!target) return;
+
+    const confirmMsg = `Vuoi davvero cancellare la lezione "${target.titolo}" dalla memoria?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    this.sound.pop();
+
+    // 1. If it's a custom lesson, remove from localStorage custom lessons
+    let saved = [];
+    try {
+      saved = JSON.parse(localStorage.getItem('studio_magico_custom_lessons') || '[]');
+    } catch (e) {
+      saved = [];
+    }
+    const filteredSaved = saved.filter(l => l.id !== id);
+    localStorage.setItem('studio_magico_custom_lessons', JSON.stringify(filteredSaved));
+
+    // 2. If it's a demo lesson, track it as hidden in localStorage
+    if (window.DEMO_LESSONS && window.DEMO_LESSONS.some(d => d.id === id)) {
+      let hiddenDemos = [];
+      try {
+        hiddenDemos = JSON.parse(localStorage.getItem('studio_magico_hidden_demos') || '[]');
+      } catch (e) {
+        hiddenDemos = [];
+      }
+      if (!hiddenDemos.includes(id)) {
+        hiddenDemos.push(id);
+        localStorage.setItem('studio_magico_hidden_demos', JSON.stringify(hiddenDemos));
+      }
+    }
+
+    // 3. Remove from read history if tracked
+    if (this.stats && Array.isArray(this.stats.readLessons)) {
+      this.stats.readLessons = this.stats.readLessons.filter(readId => readId !== id);
+      this.saveStats();
+    }
+
+    // 4. If current active lesson was deleted, load next available lesson
+    const remaining = this.getAllLessons();
+    if (this.currentLesson && this.currentLesson.id === id) {
+      if (remaining.length > 0) {
+        this.loadLesson(remaining[0]);
+      } else if (window.DEMO_LESSONS && window.DEMO_LESSONS.length > 0) {
+        localStorage.removeItem('studio_magico_hidden_demos');
+        this.loadLesson(window.DEMO_LESSONS[0]);
+      }
+    }
+
+    // 5. Re-render drawer list & update mascot
+    this.renderSavedLessonsList();
+    this.setMascotMessage(`Lezione "${target.titolo}" rimossa dalla memoria! 🧹`, true);
+  },
+
+  deleteCurrentLesson() {
+    if (this.currentLesson && this.currentLesson.id) {
+      this.deleteLesson(this.currentLesson.id);
+    }
+  },
+
+  restoreDemoLessons() {
+    this.sound.pop();
+    localStorage.removeItem('studio_magico_hidden_demos');
+    this.renderSavedLessonsList();
+    this.setMascotMessage("Lezioni demo ripristinate con successo! 📚", true);
   },
 
   // --- Multi-Page Upload Preview & Management ---

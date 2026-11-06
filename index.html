@@ -157,11 +157,17 @@
             3ª Elementare
           </span>
         </div>
-        <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
-          <span>📚</span>
-          <span class="hidden xs:inline">Scegli Altra Lezione</span>
-          <span class="xs:hidden">Altre Lezioni</span>
-        </button>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="deleteCurrentLessonBtn" onclick="App.deleteCurrentLesson()" title="Cancella questa lezione dalla memoria" class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+            <span>🗑️</span>
+            <span class="hidden xs:inline">Cancella</span>
+          </button>
+          <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
+            <span>📚</span>
+            <span class="hidden xs:inline">Scegli Altra Lezione</span>
+            <span class="xs:hidden">Altre Lezioni</span>
+          </button>
+        </div>
       </div>
 
       <h2 id="lessonTitle" class="text-xl sm:text-3xl font-extrabold text-slate-900 font-heading mb-3 sm:mb-4 leading-snug">
@@ -492,7 +498,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=22"></script>
-  <script src="app.js?v=22"></script>
+  <script src="demo-data.js?v=23"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>
