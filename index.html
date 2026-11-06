@@ -64,7 +64,7 @@
       <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-shrink">
         <!-- Grade Selector (3ª Elem to 3ª Media) -->
         <div class="relative inline-flex items-center min-w-0 flex-shrink">
-          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl outline-none cursor-pointer transition-colors shadow-xs max-w-[95px] xs:max-w-[125px] sm:max-w-[170px] md:max-w-none truncate">
+          <select id="gradeSelect" aria-label="Seleziona la classe scolastica" class="bg-indigo-50 hover:bg-indigo-100/90 border-2 border-indigo-200 text-indigo-900 font-bold text-xs sm:text-sm py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl outline-none cursor-pointer transition-colors shadow-xs max-w-[112px] sm:max-w-[170px] md:max-w-none truncate">
             <option value="3-elem">🎒 3ª Elem</option>
             <option value="4-elem">🎒 4ª Elem</option>
             <option value="5-elem">🎒 5ª Elem</option>
@@ -148,32 +148,24 @@
 
     <!-- CURRENT LESSON HEADER CARD -->
     <section class="card-clay p-4 sm:p-6 bg-white w-full overflow-hidden">
-      <div class="flex items-center justify-between gap-2 mb-2 w-full flex-wrap">
+      <div class="flex items-center justify-between gap-2 mb-3 w-full">
         <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
           <span id="lessonSubject" class="px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 flex-shrink-0">
             Storia
           </span>
-          <span id="lessonClassBadge" class="px-2 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 flex-shrink-0">
+          <span id="lessonClassBadge" class="px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 flex-shrink-0">
             3ª Elementare
           </span>
-          <span id="lessonArchivedBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0">
+          <span id="lessonArchivedBadge" class="hidden px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0">
             📦 Archiviata
           </span>
         </div>
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          <button id="archiveCurrentLessonBtn" onclick="App.toggleArchiveCurrentLesson()" title="Archivia questa lezione già studiata" class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
-            <span>📦</span>
-            <span class="hidden sm:inline">Archivia</span>
-          </button>
-          <button id="deleteCurrentLessonBtn" onclick="App.deleteCurrentLesson()" title="Cancella questa lezione dalla memoria" class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
-            <span>🗑️</span>
-            <span class="hidden sm:inline">Elimina</span>
-          </button>
-          <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-blue text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 text-white shadow-xs">
-            <span>📚</span>
-            <span>Lezioni</span>
-          </button>
-        </div>
+        <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" 
+                class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xs flex-shrink-0 text-slate-700">
+          <span>📚</span>
+          <span class="hidden sm:inline">Scegli Altra Lezione</span>
+          <span class="sm:hidden">Altre Lezioni</span>
+        </button>
       </div>
 
       <h2 id="lessonTitle" class="text-xl sm:text-3xl font-extrabold text-slate-900 font-heading mb-3 sm:mb-4 leading-snug">
@@ -226,14 +218,20 @@
           <!-- Populated by JavaScript -->
         </article>
 
-        <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <p class="text-sm font-semibold text-slate-500">
+        <div class="mt-8 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs sm:text-sm font-semibold text-slate-500">
             💡 Suggerimento: Dopo aver letto il racconto, passa alle Flashcard per fissare i concetti!
           </p>
-          <button id="markReadBtn" class="btn-tactile btn-emerald px-5 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-2 shadow">
-            <span>⭐</span>
-            <span>Ho letto il racconto! (+20 ⭐)</span>
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="archiveCurrentLessonBtn" onclick="App.toggleArchiveCurrentLesson()" class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors">
+              <span>📦</span>
+              <span>Archivia Lezione</span>
+            </button>
+            <button id="markReadBtn" class="btn-tactile btn-emerald px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-base flex items-center gap-2 shadow">
+              <span>⭐</span>
+              <span>Ho letto il racconto! (+20 ⭐)</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -500,7 +498,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=25"></script>
-  <script src="app.js?v=25"></script>
+  <script src="demo-data.js?v=26"></script>
+  <script src="app.js?v=26"></script>
 </body>
 </html>

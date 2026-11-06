@@ -1127,13 +1127,13 @@ const App = {
     if (!btn) return;
 
     if (isArchived) {
-      btn.innerHTML = '<span>📥</span><span class="hidden sm:inline">Riporta</span>';
-      btn.className = 'btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
+      btn.innerHTML = '<span>📥</span><span>Riporta in Studio</span>';
+      btn.className = 'btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors';
       btn.title = "Questa lezione è archiviata. Clicca per riportarla tra le lezioni attive in studio";
     } else {
-      btn.innerHTML = '<span>📦</span><span class="hidden sm:inline">Archivia</span>';
-      btn.className = 'btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
-      btn.title = "Archivia questa lezione già studiata per rileggerla più avanti senza averla tra le lezioni attive";
+      btn.innerHTML = '<span>📦</span><span>Archivia per il Ripasso</span>';
+      btn.className = 'btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors';
+      btn.title = "Archivia questa lezione già studiata per rileggerla più avanti";
     }
   },
 

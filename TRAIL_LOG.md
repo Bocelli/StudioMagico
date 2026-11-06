@@ -2,29 +2,27 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.6 (Mobile Drawer Overflow Fix & 2-Row Responsive Card Architecture)  
+> **Stato Rilascio:** v3.7 (Clean Single-Row Header Purification & Contextual Action Placement)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Risoluzione Bug Layout Drawer Mobile (Overflow Schede e Pulsanti Tagliati Fuori Schermo)**:
-   - *Problema rilevato dall'utente tramite screenshot (`media_1793970051550_14b0307f.jpg`)*:
-     1. La scheda della lezione attiva all'interno del drawer *"Lezioni"* fuoriusciva vistosamente oltre il bordo destro del display (bordo blu sbalzato all'infinito e testo troncato a metà), facendo sparire completamente fuori schermo i pulsanti di azione (`Archivia`, `Cancella`, `Apri`).
-     2. Nell'intestazione della lezione aperta, i pulsanti `Archivia` e `Cancella` apparivano come minuscoli quadrati con sole emoji fluttuanti, a causa dell'uso di una classe `hidden xs:inline` (classe `xs:` inesistente in Tailwind standard, che lasciava l'etichetta testuale permanentemente invisibile).
-   - *Causa radice*:
-     - In `renderSavedLessonsList()`, ogni scheda lezione tentava di stipare in una sola riga orizzontale (`flex items-center justify-between`): icona grande, titolo, 4 badge di stato e 3 pulsanti tattili distinti (`Archivia`, `Cancella`, `Apri ➔`). Su viewport mobile (360-390px), questa composizione richiedeva una larghezza minima intrinseca di oltre 380px, sbalzando la scheda fuori dal cassetto.
-   - *Soluzione architetturale (Mobile-First / Awesome AI Tools for UI)*:
-     - **Architettura a 2 Righe per Scheda**:
-       - *Riga 1*: icona, titolo con `break-words` e badge di stato (`ALTRO`, `3ª Media`, `📸 Tua Foto`, `⭐ Studiata`) che vanno a capo fluidamente occupando il 100% della larghezza.
-       - *Riga 2*: barra delle azioni dedicata e distanziata con linea divisoria sottile: a sinistra `[ 📦 Archivia ]` (o `[ 📥 Riporta ]`) e `[ 🗑️ Elimina ]`, a destra `[ 📖 Leggi ]` (o `[ Apri ➔ ]`).
-     - **Regole Anti-Overflow CSS**: applicato `max-width: 100%; box-sizing: border-box; overflow-hidden` a `#lessonsDrawer`, `#demoLessonsList` e `.card-clay`.
-     - **Risoluzione Header Lezione Attiva**: sostituzione delle classi `xs:` con responsive design standard: icone con padding calibrato su mobile (`px-2 py-1.5`) ed etichette testuali visibili da `sm:inline`, con aggiunta del badge esplicito `📦 Archiviata` quando la lezione corrente è in archivio.
-2. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato (v3.5)**:
+1. **Ripristino Eleganza e Pulizia Header Scheda Lezione**:
+   - *Problema rilevato dall'utente tramite screenshot (`media_1793970609622_38714aad.jpg`)*:
+     - I pulsanti `📦` e `🗑️` e `📚 Lezioni` nell'intestazione della lezione attiva formavano una seconda riga spezzata e disordinata tra i badge della classe e il titolo, con due piccoli riquadri emoji dall'aspetto rotto e disallineato.
+   - *Soluzione architetturale*:
+     - **Rimozione Clutter dall'Header**: l'intestazione torna ad essere una riga unica, pulita e armoniosa: a sinistra i badge informativi (`[ STORIA ] [ 3ª ELEMENTARE ]` ed eventuale `[ 📦 Archiviata ]`), a destra l'unico pulsante principale `[ 📚 Altre Lezioni ]` che apre il cassetto di gestione.
+     - **Collocazione Naturale dell'Archiviazione**: inserito il pulsante `[ 📦 Archivia Lezione ]` al termine della spiegazione didattica, accanto a `[ ⭐ Ho letto il racconto! ]`, dove lo studente/genitore compie naturalmente l'azione dopo aver finito di studiare.
+     - **Risoluzione Troncatura Selettore Classe**: allargato il vincolo `max-w` del selettore da 95px a 112px, eliminando i fastidiosi puntini di sospensione (`🎒 3ª Elem` ora visibile per intero).
+     - **Gestione Completa nel Cassetto**: all'interno del cassetto lezioni, ogni scheda mantiene i comandi dedicati `[ 📦 Archivia ]` (o `[ 📥 Riporta ]`) e `[ 🗑️ Elimina ]`.
+2. **Risoluzione Bug Layout Drawer Mobile (v3.6)**:
+   - Architettura a 2 righe per ciascuna scheda lezione nel cassetto per prevenire qualsiasi overflow su schermi 360-390px.
+3. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato (v3.5)**:
    - Sistema di archiviazione per conservare le lezioni già studiate senza ingombrare la lista attiva.
-3. **Pulsante Cancella / Gestione Memoria Lezioni Studiate (v3.4)**:
+4. **Pulsante Cancella / Gestione Memoria Lezioni Studiate (v3.4)**:
    - Eliminazione definitiva delle lezioni dalla memoria browser con pulizia sincronizzata di custom lessons, hidden demos, archivio e read stats.
-4. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
+5. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
    - Algoritmo di Fisher-Yates per distribuire casualmente ed equamente le risposte esatte tra A, B e C.
 
 ---
