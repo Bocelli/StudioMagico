@@ -2,27 +2,30 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.5 (Lesson Archive Lifecycle & Tab Filtering)  
+> **Stato Rilascio:** v3.6 (Mobile Drawer Overflow Fix & 2-Row Responsive Card Architecture)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato**:
-   - *Problema rilevato dall'utente*: necessità di archiviare le lezioni già studiate per tenerle da parte e poterle rileggere tra settimane o mesi, senza averle in mezzo tra le lezioni attive in studio.
-   - *Soluzione*:
-     - Inserito il pulsante rapido `📦 Archivia` nell'intestazione della lezione aperta (che si trasforma dinamicamente in `📥 Dall'Archivio` se la lezione è già archiviata).
-     - Riorganizzato il drawer *"Scegli Altra Lezione"* con filtro a sezioni: **`[ 📚 In Studio (N) ]`** per le lezioni attive e **`[ 📦 Archivio (M) ]`** per le lezioni archiviate.
-     - Azione `📦 Archivia` presente su ogni scheda attiva e azione `📥 Riporta` su ogni scheda archiviata per ripristinarla in studio con un solo tocco.
-     - Persistenza dello stato su `localStorage.getItem('studio_magico_archived_lessons')`.
-2. **Pulsante Cancella / Gestione Memoria Lezioni Studiate (v3.4)**:
+1. **Risoluzione Bug Layout Drawer Mobile (Overflow Schede e Pulsanti Tagliati Fuori Schermo)**:
+   - *Problema rilevato dall'utente tramite screenshot (`media_1793970051550_14b0307f.jpg`)*:
+     1. La scheda della lezione attiva all'interno del drawer *"Lezioni"* fuoriusciva vistosamente oltre il bordo destro del display (bordo blu sbalzato all'infinito e testo troncato a metà), facendo sparire completamente fuori schermo i pulsanti di azione (`Archivia`, `Cancella`, `Apri`).
+     2. Nell'intestazione della lezione aperta, i pulsanti `Archivia` e `Cancella` apparivano come minuscoli quadrati con sole emoji fluttuanti, a causa dell'uso di una classe `hidden xs:inline` (classe `xs:` inesistente in Tailwind standard, che lasciava l'etichetta testuale permanentemente invisibile).
+   - *Causa radice*:
+     - In `renderSavedLessonsList()`, ogni scheda lezione tentava di stipare in una sola riga orizzontale (`flex items-center justify-between`): icona grande, titolo, 4 badge di stato e 3 pulsanti tattili distinti (`Archivia`, `Cancella`, `Apri ➔`). Su viewport mobile (360-390px), questa composizione richiedeva una larghezza minima intrinseca di oltre 380px, sbalzando la scheda fuori dal cassetto.
+   - *Soluzione architetturale (Mobile-First / Awesome AI Tools for UI)*:
+     - **Architettura a 2 Righe per Scheda**:
+       - *Riga 1*: icona, titolo con `break-words` e badge di stato (`ALTRO`, `3ª Media`, `📸 Tua Foto`, `⭐ Studiata`) che vanno a capo fluidamente occupando il 100% della larghezza.
+       - *Riga 2*: barra delle azioni dedicata e distanziata con linea divisoria sottile: a sinistra `[ 📦 Archivia ]` (o `[ 📥 Riporta ]`) e `[ 🗑️ Elimina ]`, a destra `[ 📖 Leggi ]` (o `[ Apri ➔ ]`).
+     - **Regole Anti-Overflow CSS**: applicato `max-width: 100%; box-sizing: border-box; overflow-hidden` a `#lessonsDrawer`, `#demoLessonsList` e `.card-clay`.
+     - **Risoluzione Header Lezione Attiva**: sostituzione delle classi `xs:` con responsive design standard: icone con padding calibrato su mobile (`px-2 py-1.5`) ed etichette testuali visibili da `sm:inline`, con aggiunta del badge esplicito `📦 Archiviata` quando la lezione corrente è in archivio.
+2. **Pulsante Archivia / Gestione Archivio per il Ripasso Dilazionato (v3.5)**:
+   - Sistema di archiviazione per conservare le lezioni già studiate senza ingombrare la lista attiva.
+3. **Pulsante Cancella / Gestione Memoria Lezioni Studiate (v3.4)**:
    - Eliminazione definitiva delle lezioni dalla memoria browser con pulizia sincronizzata di custom lessons, hidden demos, archivio e read stats.
-3. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
+4. **Risoluzione Posizione Risposta Corretta nei Quiz (Shuffle Dinamico - v3.3)**:
    - Algoritmo di Fisher-Yates per distribuire casualmente ed equamente le risposte esatte tra A, B e C.
-4. **Analisi e Risoluzione Comportamento Multi-Foto (v3.2)**:
-   - Modello di scalabilità proporzionale al numero di pagine caricate (moltiplicatori dinamici 1x, 1.65x, 2.25x, 2.85x).
-5. **Risoluzione Bug Layout Mobile (v3.2)**:
-   - Eliminazione dell'overflow orizzontale (`overflow-x: hidden`), selettore compatto e troncato.
 
 ---
 

@@ -1111,16 +1111,29 @@ const App = {
 
   updateCurrentLessonArchiveBtn() {
     const btn = document.getElementById('archiveCurrentLessonBtn');
-    if (!btn || !this.currentLesson) return;
+    const badge = document.getElementById('lessonArchivedBadge');
+    if (!this.currentLesson) return;
+
     const isArchived = this.isLessonArchived(this.currentLesson.id);
+
+    if (badge) {
+      if (isArchived) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    if (!btn) return;
+
     if (isArchived) {
-      btn.innerHTML = '<span>📥</span><span class="hidden xs:inline">Dall\'Archivio</span><span class="xs:hidden">Ripristina</span>';
-      btn.className = 'btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
+      btn.innerHTML = '<span>📥</span><span class="hidden sm:inline">Riporta</span>';
+      btn.className = 'btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
       btn.title = "Questa lezione è archiviata. Clicca per riportarla tra le lezioni attive in studio";
     } else {
-      btn.innerHTML = '<span>📦</span><span class="hidden xs:inline">Archivia</span>';
-      btn.className = 'btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
-      btn.title = "Archivia questa lezione per rileggerla più avanti senza averla tra le lezioni attive";
+      btn.innerHTML = '<span>📦</span><span class="hidden sm:inline">Archivia</span>';
+      btn.className = 'btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors';
+      btn.title = "Archivia questa lezione già studiata per rileggerla più avanti senza averla tra le lezioni attive";
     }
   },
 
@@ -1145,8 +1158,8 @@ const App = {
     }
 
     let filterBar = `
-      <div class="flex items-center justify-between mb-3.5 flex-wrap gap-2 pb-3 border-b border-slate-200">
-        <div class="flex items-center gap-1.5 sm:gap-2">
+      <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-200 w-full gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <button onclick="App.setDrawerFilter('active')" 
                   class="btn-tactile text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${currentFilter === 'active' ? 'btn-blue text-white shadow-xs' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'}">
             <span>📚</span>
@@ -1158,9 +1171,9 @@ const App = {
             <span>Archivio (${archivedLessons.length})</span>
           </button>
         </div>
-        <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-sm font-bold flex items-center gap-1">
-          <span>Chiudi</span>
+        <button onclick="document.getElementById('lessonsDrawer').classList.add('hidden')" class="btn-tactile bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-700 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 flex-shrink-0">
           <span>✕</span>
+          <span class="hidden sm:inline">Chiudi</span>
         </button>
       </div>
     `;
@@ -1179,7 +1192,7 @@ const App = {
     if (displayedLessons.length === 0) {
       if (currentFilter === 'archived') {
         cardsHtml = `
-          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-amber-200">
+          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-amber-200 w-full">
             <span class="text-3xl mb-1 block">📦</span>
             <p class="text-slate-600 font-bold text-sm mb-1">Nessuna lezione archiviata.</p>
             <p class="text-slate-400 text-xs">Quando hai finito di studiare una lezione, premi il tasto <strong>"📦 Archivia"</strong> per conservarla qui senza ingombrare la lista delle lezioni in studio!</p>
@@ -1187,7 +1200,7 @@ const App = {
         `;
       } else {
         cardsHtml = `
-          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
+          <div class="p-6 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200 w-full">
             <span class="text-3xl mb-1 block">📚</span>
             <p class="text-slate-600 font-bold text-sm mb-2">Tutte le lezioni sono state archiviate o rimosse!</p>
             <div class="flex items-center justify-center gap-2 flex-wrap">
@@ -1203,7 +1216,7 @@ const App = {
       }
     } else {
       cardsHtml = `
-        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-full">
           ${displayedLessons.map(l => {
             const isCurrent = this.currentLesson && this.currentLesson.id === l.id;
             const isCustom = l.id && l.id.toString().startsWith('custom-');
@@ -1212,48 +1225,57 @@ const App = {
             const icon = l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚';
 
             return `
-              <div onclick="App.loadLessonById('${l.id}')" 
-                   class="card-clay p-3 sm:p-4 cursor-pointer hover:border-blue-400 flex items-center justify-between gap-2 transition-all ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/50 shadow-sm' : 'bg-white'}">
-                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                  <span class="text-2xl sm:text-3xl flex-shrink-0">${icon}</span>
+              <div class="card-clay p-3 sm:p-4 rounded-2xl flex flex-col gap-2.5 transition-all w-full max-w-full overflow-hidden ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/60 shadow-sm' : 'bg-white hover:border-blue-300'}">
+                
+                <!-- Row 1: Clickable Title & Details -->
+                <div onclick="App.loadLessonById('${l.id}')" class="flex items-start gap-2.5 cursor-pointer w-full min-w-0">
+                  <span class="text-2xl sm:text-3xl flex-shrink-0 mt-0.5">${icon}</span>
                   <div class="min-w-0 flex-1">
-                    <h4 class="font-bold text-slate-800 text-sm sm:text-base font-heading leading-tight truncate" title="${l.titolo}">${l.titolo}</h4>
-                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <span class="text-[10px] font-bold text-slate-500 uppercase">${l.materia}</span>
+                    <h4 class="font-bold text-slate-900 text-sm sm:text-base font-heading leading-snug break-words" title="${l.titolo}">
+                      ${l.titolo}
+                    </h4>
+                    <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <span class="text-[10px] font-extrabold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full uppercase">${l.materia}</span>
                       ${l.classe ? `<span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-full">${l.classe}</span>` : ''}
-                      ${isCustom ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">📸 Tua Lezione</span>` : ''}
-                      ${isRead ? `<span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Studiata</span>` : ''}
+                      ${isCustom ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">📸 Tua Foto</span>` : ''}
+                      ${isRead ? `<span class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">⭐ Studiata</span>` : ''}
+                      ${isCurrent ? `<span class="text-[10px] font-bold text-blue-800 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded-full">✓ Aperta</span>` : ''}
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 flex-shrink-0">
-                  ${isArchived ? `
-                    <button onclick="event.stopPropagation(); App.unarchiveLesson('${l.id}')" 
-                            title="Riporta questa lezione tra quelle attive" 
-                            class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 transition-colors"
-                            aria-label="Riporta lezione in studio">
-                      <span>📥</span>
-                      <span class="hidden sm:inline">Riporta</span>
+
+                <!-- Row 2: Action Buttons (Guaranteed 100% fitting on mobile) -->
+                <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100 w-full min-w-0">
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    ${isArchived ? `
+                      <button onclick="event.stopPropagation(); App.unarchiveLesson('${l.id}')" 
+                              title="Riporta questa lezione tra quelle attive in studio" 
+                              class="btn-tactile border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+                        <span>📥</span>
+                        <span>Riporta</span>
+                      </button>
+                    ` : `
+                      <button onclick="event.stopPropagation(); App.archiveLesson('${l.id}')" 
+                              title="Archivia questa lezione per rileggerla più avanti" 
+                              class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+                        <span>📦</span>
+                        <span>Archivia</span>
+                      </button>
+                    `}
+                    <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
+                            title="Elimina definitivamente dalla memoria" 
+                            class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+                      <span>🗑️</span>
+                      <span class="hidden sm:inline">Elimina</span>
                     </button>
-                  ` : `
-                    <button onclick="event.stopPropagation(); App.archiveLesson('${l.id}')" 
-                            title="Archivia lezione per tenerla da parte" 
-                            class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs flex items-center gap-1 transition-colors"
-                            aria-label="Archivia lezione">
-                      <span>📦</span>
-                      <span class="hidden sm:inline">Archivia</span>
-                    </button>
-                  `}
-                  <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
-                          title="Cancella dalla memoria" 
-                          class="p-2 sm:px-2.5 sm:py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-200 text-red-600 font-bold text-xs flex items-center gap-1 transition-colors"
-                          aria-label="Cancella lezione">
-                    <span>🗑️</span>
+                  </div>
+
+                  <button onclick="App.loadLessonById('${l.id}')" 
+                          class="btn-tactile ${isCurrent ? 'bg-indigo-600 text-white font-bold' : 'btn-slate text-slate-800 font-semibold'} text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 flex-shrink-0 shadow-xs">
+                    <span>${isCurrent ? '📖 Leggi' : (isArchived ? 'Rileggi ➔' : 'Apri ➔')}</span>
                   </button>
-                  <span class="btn-tactile ${isCurrent ? 'btn-blue text-white' : 'btn-slate text-slate-700'} text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center">
-                    ${isCurrent ? (isArchived ? 'In Lettura' : 'Attiva') : (isArchived ? 'Rileggi ➔' : 'Apri ➔')}
-                  </span>
                 </div>
+
               </div>
             `;
           }).join('')}
@@ -1264,7 +1286,7 @@ const App = {
     let footerHtml = '';
     if (hiddenDemos.length > 0) {
       footerHtml = `
-        <div class="pt-3 mt-3 border-t border-slate-200 flex justify-end">
+        <div class="pt-3 mt-3 border-t border-slate-200 flex justify-end w-full">
           <button onclick="App.restoreDemoLessons()" class="text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold flex items-center gap-1">
             <span>🔄</span>
             <span>Ripristina le ${hiddenDemos.length} lezioni demo nascoste</span>

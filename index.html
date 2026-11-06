@@ -147,29 +147,31 @@
     </section>
 
     <!-- CURRENT LESSON HEADER CARD -->
-    <section class="card-clay p-4 sm:p-6 bg-white w-full">
-      <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-2">
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <span id="lessonSubject" class="px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800">
+    <section class="card-clay p-4 sm:p-6 bg-white w-full overflow-hidden">
+      <div class="flex items-center justify-between gap-2 mb-2 w-full flex-wrap">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+          <span id="lessonSubject" class="px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 flex-shrink-0">
             Storia
           </span>
-          <span id="lessonClassBadge" class="px-2.5 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
+          <span id="lessonClassBadge" class="px-2 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 flex-shrink-0">
             3ª Elementare
           </span>
+          <span id="lessonArchivedBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0">
+            📦 Archiviata
+          </span>
         </div>
-        <div class="flex items-center gap-1.5 sm:gap-2">
-          <button id="archiveCurrentLessonBtn" onclick="App.toggleArchiveCurrentLesson()" title="Archivia questa lezione già studiata" class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button id="archiveCurrentLessonBtn" onclick="App.toggleArchiveCurrentLesson()" title="Archivia questa lezione già studiata" class="btn-tactile border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
             <span>📦</span>
-            <span class="hidden xs:inline">Archivia</span>
+            <span class="hidden sm:inline">Archivia</span>
           </button>
-          <button id="deleteCurrentLessonBtn" onclick="App.deleteCurrentLesson()" title="Cancella questa lezione dalla memoria" class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+          <button id="deleteCurrentLessonBtn" onclick="App.deleteCurrentLesson()" title="Cancella questa lezione dalla memoria" class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-2 sm:px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
             <span>🗑️</span>
-            <span class="hidden xs:inline">Cancella</span>
+            <span class="hidden sm:inline">Elimina</span>
           </button>
-          <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1">
+          <button onclick="document.getElementById('lessonsDrawer').classList.toggle('hidden')" class="btn-tactile btn-blue text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1 text-white shadow-xs">
             <span>📚</span>
-            <span class="hidden xs:inline">Scegli Altra Lezione</span>
-            <span class="xs:hidden">Altre Lezioni</span>
+            <span>Lezioni</span>
           </button>
         </div>
       </div>
@@ -179,8 +181,8 @@
       </h2>
 
       <!-- DRAWER: Lezioni Precaricate / Salvate & Archivio -->
-      <div id="lessonsDrawer" class="hidden my-4 p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
-        <div id="demoLessonsList">
+      <div id="lessonsDrawer" class="hidden my-3 sm:my-4 p-3 sm:p-4 bg-slate-50/95 rounded-2xl border-2 border-slate-200 overflow-hidden w-full max-w-full">
+        <div id="demoLessonsList" class="w-full max-w-full overflow-hidden">
           <!-- Populated dynamically by JavaScript -->
         </div>
       </div>
@@ -498,7 +500,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="demo-data.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="demo-data.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>
