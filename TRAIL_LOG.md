@@ -2,24 +2,31 @@
 
 > **Sistema di Audit Trail e Tracciamento Modifiche (Skill `trail-code`)**  
 > **Data Creazione:** 2026-11-06  
-> **Stato Rilascio:** v3.8 (Mobile Top Navbar Collision Immunity & Layout Architecture)  
+> **Stato Rilascio:** v3.9 (iPad Card Layout Fix & Settings Modal Dedicated API Tab with Visual Guide)  
 > **Repository:** `https://github.com/Bocelli/StudioMagico`  
 
 ---
 
 ## 1. Obiettivo dell'Intervento (Tracking Action)
-1. **Risoluzione Definitiva Collisione e Sovrapposizione Header Mobile (v3.8)**:
-   - *Bug riscontrato dall'utente tramite screenshot (`media_1793972249898_b3e629a7.jpg` con freccia rossa)*:
-     - Su schermi smartphone (360px - 390px), il selettore della classe (`🎒 3ª Elem ˅`) si sovrapponeva fisicamente coprendo parzialmente il contatore delle stelline (`⭐ 50`).
-   - *Analisi di Causa Radice (Root Cause)*:
-     - L'elemento select era racchiuso in un wrapper `div` con `flex-shrink min-w-0` mentre i fratelli (`#headerStars`, `#openUploadBtn`, `#openSettingsBtn`) avevano tutti `flex-shrink-0`.
-     - In carenza di spazio orizzontale su schermi stretti (360px), il flexbox comprimeva il wrapper del selettore fino a ~15px; tuttavia il controllo `<select>` nativo non può ridursi sotto la sua larghezza minima di contenuto e, in assenza di `overflow: hidden`, strabordava a destra coprendo il badge delle stelline collocato subito dopo.
-     - Inoltre il pulsante fotocamera mostrava l'etichetta testuale `Foto` su mobile, consumando oltre 72px e saturando la larghezza disponibile.
-   - *Soluzione architetturale implementata*:
-     - **Rimozione Wrapper Fragile**: eliminato il contenitore intermedio; il `<select id="gradeSelect">` è ora figlio diretto del contenitore flex con `flex-shrink-0`.
-     - **Icon-Only Mobile Action**: il pulsante `#openUploadBtn` su mobile visualizza l'icona tattile quadrata della fotocamera (32x32px), nascondendo il testo `Foto Libro` solo su schermi piccoli (`hidden sm:inline`).
-     - **Normalizzazione Aspetto Select**: introdotto in `style.css` un chevron SVG pulito con `appearance: none`, eliminando il padding invisibile anomalo inserito dai browser Android nativi.
-     - **Zero Overlap Garantito**: la somma delle larghezze minime (Logo ~114px + Selettore ~80px + Stelline ~42px + Foto ~32px + Settings ~32px + gap ~20px) ammonta a soli 320px, lasciando oltre 40px di margine libero su schermi 360px e 70px su 390px, rendendo fisicamente impossibile qualsiasi sovrapposizione.
+1. **Risoluzione Layout Schede Lezioni su iPad / Tablet (v3.9)**:
+   - *Problema rilevato dall'utente*: "La UI su ipad, per quanto riguarda i tasti delle schede delle lezioni, è tutta sminchiata e taglia roba fuori dalla scheda."
+   - *Causa Radice*: Nel cassetto lezioni, la griglia usava `grid-cols-1 sm:grid-cols-2 md:grid-cols-3`. Poiché l'iPad in portrait ha una risoluzione orizzontale di 768px/810px/820px, la media query `md:` si attivava dividendo lo spazio in 3 colonne strette (~205px per scheda). Al contempo, il breakpoint `sm:` attivava il testo "Elimina" accanto all'icona del cestino, gonfiando la barra dei tasti a ~250px. I tasti strabordavano fuori dalla scheda venendo tagliati a metà dal vincolo `overflow: hidden`.
+   - *Soluzione architetturale*:
+     - Griglia responsive corretta: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4`. Su iPad/tablet portrait (768-1023px) le schede sono ora comodamente disposte su 2 colonne (~320px ciascuna).
+     - Barra azioni resiliente: `flex-wrap` e posizionamento destro con `ml-auto` per il tasto "Apri/Leggi", pulsante cestino compatto su tablet (`hidden sm:inline md:hidden lg:inline`), e proprietà CSS per impedire clipping su tablet.
+2. **Pannello Impostazioni: Scheda Dedicata API Gemini con Guida Visiva e Avviso Obbligatorio (v3.9)**:
+   - *Richiesta utente*: "creassi una tab a parte, all'interno delle impostazioni, per le API di gemini (ovviamente scrivendo nella tab principale che SERVE compilare la tab delle API) con tanto di guida visiva sul come fare".
+   - *Implementazione architetturale*:
+     - **Sistema Sub-Tabs**: Nel modale impostazioni sono state create due schede: `[ ⚙️ Generale ]` e `[ 🔑 Chiave API Gemini ]` (con badge dinamico `Serve`/`Attiva`).
+     - **Avviso Obbligatorio in Tab Generale**: Inserito un box evidente giallo/ambra con icona animata: *"ATTENZIONE: SERVE COMPILARE LA TAB DELLE API!"*, con spiegazione chiara del perché è indispensabile e pulsante one-click per aprire direttamente la scheda API. Se la chiave è già inserita, si trasforma in un banner verde di conferma.
+     - **Guida Visiva Ufficiale Passo-Passo**: Nella scheda API, introdotte 4 card grafiche numerate:
+       1. *Apri Google AI Studio* (con link diretto e bottone evidente).
+       2. *Clicca su 'Create API key'* (con mockup grafico del tasto blu Google).
+       3. *Copia la stringa segreta* (con anteprima stilizzata `AIzaSyB...` e rassicurazione sul 100% gratuito).
+       4. *Incolla e Salva* (con tasti rapidi 'Incolla dagli appunti', 'Mostra/Nascondi password' e tasto '🧪 Testa Connessione IA' che verifica in tempo reale la validità della chiave).
+     - **Redirect Intelligente**: Se l'utente tenta di analizzare una foto senza chiave, l'app apre automaticamente la scheda API con la guida visiva pronta.
+3. **Risoluzione Definitiva Collisione e Sovrapposizione Header Mobile (v3.8)**:
+   - Eliminato wrapper fragile di `gradeSelect`, applicato `flex-shrink-0` e normalizzato stile select con SVG per impedire sovrapposizioni su `headerStars`.
 2. **Ripristino Eleganza e Pulizia Header Scheda Lezione (v3.7)**:
    - *Problema rilevato dall'utente tramite screenshot (`media_1793970609622_38714aad.jpg`)*:
      - I pulsanti `📦` e `🗑️` e `📚 Lezioni` nell'intestazione della lezione attiva formavano una seconda riga spezzata e disordinata.

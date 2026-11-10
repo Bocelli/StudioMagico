@@ -244,3 +244,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     padding-right: 6px !important;
   }
 }
+
+/* iPad & Tablet Responsiveness: Prevent card clipping and button overflow */
+@media (min-width: 768px) and (max-width: 1024px) {
+  #demoLessonsList .card-clay {
+    overflow: visible;
+  }
+}

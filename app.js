@@ -187,6 +187,7 @@ const App = {
     this.setupMascotGreetings();
     this.renderHeaderStats();
     this.bindEvents();
+    this.updateSettingsModalState();
 
     // Load first available active lesson (or fallback to any lesson) so the app is immediately alive!
     const activeLessons = this.getAllLessons(false);
@@ -266,8 +267,16 @@ const App = {
     if (syncSelects) {
       const headerSelect = document.getElementById('gradeSelect');
       const modalSelect = document.getElementById('modalGradeSelect');
+      const generalSelect = document.getElementById('generalGradeSelect');
       if (headerSelect && headerSelect.value !== this.selectedGrade) headerSelect.value = this.selectedGrade;
       if (modalSelect && modalSelect.value !== this.selectedGrade) modalSelect.value = this.selectedGrade;
+      if (generalSelect && generalSelect.value !== this.selectedGrade) generalSelect.value = this.selectedGrade;
+    }
+
+    // Settings modal general tab grade badge
+    const generalBadge = document.getElementById('generalGradeBadge');
+    if (generalBadge) {
+      generalBadge.innerText = profile.name;
     }
 
     // Header brand subtitle
@@ -315,6 +324,11 @@ const App = {
       modalSelect.value = this.selectedGrade;
       modalSelect.addEventListener('change', (e) => this.setGrade(e.target.value));
     }
+    const generalSelect = document.getElementById('generalGradeSelect');
+    if (generalSelect) {
+      generalSelect.value = this.selectedGrade;
+      generalSelect.addEventListener('change', (e) => this.setGrade(e.target.value));
+    }
 
     this.updateGradeUI(true);
   },
@@ -351,18 +365,9 @@ const App = {
     const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
     const apiKeyInput = document.getElementById('apiKeyInput');
 
-    if (settingsBtn && settingsModal) {
+    if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
-        this.sound.pop();
-        if (apiKeyInput) {
-          apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
-        }
-        const modelSelect = document.getElementById('modelSelectInput');
-        if (modelSelect) {
-          modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
-        }
-
-        settingsModal.classList.remove('hidden');
+        this.openSettingsModal('general');
       });
     }
 
@@ -382,11 +387,16 @@ const App = {
           localStorage.setItem('gemini_selected_model', modelSelect.value);
         }
 
-        
-
         this.sound.success();
-        alert('Impostazioni salvate con successo!');
-        settingsModal.classList.add('hidden');
+        this.updateSettingsModalState();
+        const feedback = document.getElementById('apiKeyFeedbackMsg');
+        if (feedback) {
+          feedback.className = 'p-3 rounded-xl text-xs font-bold bg-emerald-50 border border-emerald-300 text-emerald-900';
+          feedback.innerHTML = '✅ Chiave API Gemini salvata con successo!';
+          feedback.classList.remove('hidden');
+        }
+        alert('Impostazioni e Chiave API salvate con successo!');
+        if (settingsModal) settingsModal.classList.add('hidden');
       });
     }
 
@@ -554,11 +564,192 @@ const App = {
     const soundToggle = document.getElementById('soundToggle');
     if (soundToggle) {
       soundToggle.addEventListener('click', () => {
-        this.sound.enabled = !this.sound.enabled;
-        soundToggle.innerText = this.sound.enabled ? '🔔 Suoni: Attivi' : '🔕 Suoni: Spenti';
-        if (this.sound.enabled) this.sound.pop();
+        this.toggleSound();
       });
     }
+  },
+
+  // --- Parent Settings Modal & API Tabs Logic ---
+  currentSettingsTab: 'general',
+
+  openSettingsModal(defaultTab = 'general') {
+    this.sound.pop();
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    if (apiKeyInput) {
+      apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+    }
+    const modelSelect = document.getElementById('modelSelectInput');
+    if (modelSelect) {
+      modelSelect.value = localStorage.getItem('gemini_selected_model') || 'gemini-3.8-flash';
+    }
+
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal) {
+      settingsModal.classList.remove('hidden');
+    }
+    this.switchSettingsTab(defaultTab);
+  },
+
+  switchSettingsTab(tabName) {
+    this.currentSettingsTab = tabName;
+    const generalTabBtn = document.getElementById('settingsTabBtnGeneral');
+    const apiTabBtn = document.getElementById('settingsTabBtnApi');
+    const generalContent = document.getElementById('settingsContentGeneral');
+    const apiContent = document.getElementById('settingsContentApi');
+
+    if (tabName === 'api') {
+      if (generalTabBtn) {
+        generalTabBtn.className = 'btn-tactile text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200';
+      }
+      if (apiTabBtn) {
+        apiTabBtn.className = 'btn-tactile text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all btn-blue text-white shadow-xs';
+      }
+      if (generalContent) generalContent.classList.add('hidden');
+      if (apiContent) apiContent.classList.remove('hidden');
+      const keyInput = document.getElementById('apiKeyInput');
+      if (keyInput && !keyInput.value) {
+        setTimeout(() => keyInput.focus(), 150);
+      }
+    } else {
+      if (generalTabBtn) {
+        generalTabBtn.className = 'btn-tactile text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all btn-blue text-white shadow-xs';
+      }
+      if (apiTabBtn) {
+        apiTabBtn.className = 'btn-tactile text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-200';
+      }
+      if (generalContent) generalContent.classList.remove('hidden');
+      if (apiContent) apiContent.classList.add('hidden');
+    }
+
+    this.updateSettingsModalState();
+  },
+
+  updateSettingsModalState() {
+    const hasKey = Boolean(localStorage.getItem('gemini_api_key'));
+    const alertBox = document.getElementById('settingsApiKeyAlert');
+    const successBox = document.getElementById('settingsApiKeySuccess');
+    const apiTabBadge = document.getElementById('settingsApiTabBadge');
+
+    if (alertBox && successBox) {
+      if (hasKey) {
+        alertBox.classList.add('hidden');
+        successBox.classList.remove('hidden');
+      } else {
+        alertBox.classList.remove('hidden');
+        successBox.classList.add('hidden');
+      }
+    }
+
+    if (apiTabBadge) {
+      if (hasKey) {
+        apiTabBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+        apiTabBadge.innerText = 'Attiva';
+      } else {
+        apiTabBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 animate-pulse';
+        apiTabBadge.innerText = 'Serve';
+      }
+    }
+  },
+
+  toggleApiKeyVisibility() {
+    const keyInput = document.getElementById('apiKeyInput');
+    const toggleBtn = document.getElementById('toggleApiKeyVisibilityBtn');
+    if (!keyInput) return;
+    if (keyInput.type === 'password') {
+      keyInput.type = 'text';
+      if (toggleBtn) toggleBtn.innerHTML = '<span>🙈</span><span>Nascondi</span>';
+    } else {
+      keyInput.type = 'password';
+      if (toggleBtn) toggleBtn.innerHTML = '<span>👁️</span><span>Mostra</span>';
+    }
+  },
+
+  async pasteApiKey() {
+    const keyInput = document.getElementById('apiKeyInput');
+    if (!keyInput) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          keyInput.value = text.trim();
+          this.sound.pop();
+          return;
+        }
+      }
+    } catch (e) {
+      // Ignore clipboard read error, focus input instead
+    }
+    keyInput.focus();
+  },
+
+  async testApiKey() {
+    const keyInput = document.getElementById('apiKeyInput');
+    const feedback = document.getElementById('apiKeyFeedbackMsg');
+    const testBtn = document.getElementById('testApiKeyBtn');
+    if (!keyInput || !feedback) return;
+
+    const key = keyInput.value.trim();
+    if (!key) {
+      feedback.className = 'p-3 rounded-xl text-xs font-bold bg-amber-50 border border-amber-300 text-amber-900';
+      feedback.innerHTML = '⚠️ Incolla prima una chiave API valida per poterla testare!';
+      feedback.classList.remove('hidden');
+      return;
+    }
+
+    if (testBtn) {
+      testBtn.disabled = true;
+      testBtn.innerHTML = '<span>⏳</span><span>Verifica in corso...</span>';
+    }
+
+    feedback.className = 'p-3 rounded-xl text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-900';
+    feedback.innerHTML = 'Connessione ai server Google Gemini in corso...';
+    feedback.classList.remove('hidden');
+
+    try {
+      const selectedModel = document.getElementById('modelSelectInput')?.value || 'gemini-3.8-flash';
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`;
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "Rispondi con una sola parola: 'OK'" }] }],
+          generationConfig: { maxOutputTokens: 5 }
+        })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        const msg = errData?.error?.message || `Errore HTTP ${resp.status}`;
+        feedback.className = 'p-3 rounded-xl text-xs font-bold bg-red-50 border border-red-300 text-red-900';
+        feedback.innerHTML = `❌ Errore Google: ${msg}. Verifica di aver copiato l'intera chiave senza spazi.`;
+      } else {
+        feedback.className = 'p-3 rounded-xl text-xs font-bold bg-emerald-50 border border-emerald-300 text-emerald-900';
+        feedback.innerHTML = '✅ Connessione IA Riuscita! La tua chiave Gemini funziona perfettamente.';
+        this.sound.success();
+      }
+    } catch (err) {
+      feedback.className = 'p-3 rounded-xl text-xs font-bold bg-amber-50 border border-amber-300 text-amber-900';
+      feedback.innerHTML = `⚠️ Impossibile contattare i server Google: ${err.message}. Controlla la connessione internet.`;
+    } finally {
+      if (testBtn) {
+        testBtn.disabled = false;
+        testBtn.innerHTML = '<span>🧪</span><span>Testa Connessione IA</span>';
+      }
+    }
+  },
+
+  toggleSound() {
+    this.sound.enabled = !this.sound.enabled;
+    const headerToggle = document.getElementById('soundToggle');
+    const generalToggle = document.getElementById('generalSoundToggle');
+    if (headerToggle) {
+      headerToggle.innerText = this.sound.enabled ? '🔔 Suoni: Attivi' : '🔕 Suoni: Spenti';
+    }
+    if (generalToggle) {
+      generalToggle.innerText = this.sound.enabled ? '🔔 Attivi' : '🔕 Spenti';
+      generalToggle.className = this.sound.enabled ? 'btn-tactile btn-blue text-xs font-bold px-3 py-1.5 rounded-xl' : 'btn-tactile btn-slate text-xs font-bold px-3 py-1.5 rounded-xl';
+    }
+    if (this.sound.enabled) this.sound.pop();
   },
 
   switchTab(tab) {
@@ -1216,7 +1407,7 @@ const App = {
       }
     } else {
       cardsHtml = `
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-full">
           ${displayedLessons.map(l => {
             const isCurrent = this.currentLesson && this.currentLesson.id === l.id;
             const isCustom = l.id && l.id.toString().startsWith('custom-');
@@ -1225,7 +1416,7 @@ const App = {
             const icon = l.materia === 'Storia' ? '🔥' : l.materia === 'Scienze' ? '💧' : l.materia === 'Geografia' ? '🏔️' : '📚';
 
             return `
-              <div class="card-clay p-3 sm:p-4 rounded-2xl flex flex-col gap-2.5 transition-all w-full max-w-full overflow-hidden ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/60 shadow-sm' : 'bg-white hover:border-blue-300'}">
+              <div class="card-clay p-3 sm:p-4 rounded-2xl flex flex-col gap-2.5 transition-all w-full max-w-full ${isCurrent ? 'border-2 border-blue-500 bg-blue-50/60 shadow-sm' : 'bg-white hover:border-blue-300'}">
                 
                 <!-- Row 1: Clickable Title & Details -->
                 <div onclick="App.loadLessonById('${l.id}')" class="flex items-start gap-2.5 cursor-pointer w-full min-w-0">
@@ -1244,9 +1435,9 @@ const App = {
                   </div>
                 </div>
 
-                <!-- Row 2: Action Buttons (Guaranteed 100% fitting on mobile) -->
-                <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100 w-full min-w-0">
-                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                <!-- Row 2: Action Buttons (Responsive on Mobile, iPad & Desktop) -->
+                <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100 w-full min-w-0 flex-wrap">
+                  <div class="flex items-center gap-1.5 flex-wrap">
                     ${isArchived ? `
                       <button onclick="event.stopPropagation(); App.unarchiveLesson('${l.id}')" 
                               title="Riporta questa lezione tra quelle attive in studio" 
@@ -1264,14 +1455,14 @@ const App = {
                     `}
                     <button onclick="event.stopPropagation(); App.deleteLesson('${l.id}')" 
                             title="Elimina definitivamente dalla memoria" 
-                            class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+                            class="btn-tactile border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs px-2 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
                       <span>🗑️</span>
-                      <span class="hidden sm:inline">Elimina</span>
+                      <span class="hidden sm:inline md:hidden lg:inline">Elimina</span>
                     </button>
                   </div>
 
                   <button onclick="App.loadLessonById('${l.id}')" 
-                          class="btn-tactile ${isCurrent ? 'bg-indigo-600 text-white font-bold' : 'btn-slate text-slate-800 font-semibold'} text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 flex-shrink-0 shadow-xs">
+                          class="btn-tactile ${isCurrent ? 'bg-indigo-600 text-white font-bold' : 'btn-slate text-slate-800 font-semibold'} text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 flex-shrink-0 shadow-xs ml-auto">
                     <span>${isCurrent ? '📖 Leggi' : (isArchived ? 'Rileggi ➔' : 'Apri ➔')}</span>
                   </button>
                 </div>
@@ -1452,7 +1643,9 @@ const App = {
 
     if (!apiKey) {
       this.sound.hint();
-      alert("⚠️ Non hai ancora inserito la chiave API gratuita di Google Gemini!\n\nClicca su 'Genitore / Impostazioni' in alto a destra. Ci vuole solo 1 minuto per averla gratis da Google!");
+      if (uploadModal) uploadModal.classList.add('hidden');
+      this.openSettingsModal('api');
+      alert("⚠️ Non hai ancora inserito la chiave API gratuita di Google Gemini!\n\nTi ho aperto direttamente la scheda '🔑 Chiave API Gemini' con la guida visiva passo-passo per ottenerla gratis in 1 minuto!");
       return;
     }
 

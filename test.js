@@ -592,5 +592,28 @@ Il **fotografo** scatta foto nel tempo per vedere come cambia l'ambiente, mentre
 
   console.log('✓ Mobile top navbar collision prevention verified');
 
+  // Test S: iPad Tablet Responsiveness & Card Action Buttons Non-Clipping
+  const updatedAppCode = fs.readFileSync('app.js', 'utf8');
+  assert(updatedAppCode.includes('md:grid-cols-2 lg:grid-cols-3'), 'Drawer cards must use md:grid-cols-2 to prevent iPad portrait squish');
+  assert(updatedAppCode.includes('flex-wrap'), 'Drawer card buttons must allow wrapping to prevent card clipping');
+  assert(updatedAppCode.includes('ml-auto'), 'Read/Open button must be pushed cleanly to the right edge with ml-auto');
+  console.log('✓ iPad tablet responsiveness & card action non-clipping verified');
+
+  // Test T: Settings Modal Dedicated API Tab, Mandatory Notice, & Visual Guide
+  assert(htmlContent.includes('id="settingsTabBtnGeneral"'), 'Settings modal missing General tab button');
+  assert(htmlContent.includes('id="settingsTabBtnApi"'), 'Settings modal missing dedicated API tab button');
+  assert(htmlContent.includes('id="settingsApiKeyAlert"'), 'Settings modal missing API key notice in general tab');
+  assert(htmlContent.includes('SERVE COMPILARE LA TAB DELLE API'), 'Settings modal general tab missing mandatory notice text');
+  assert(htmlContent.includes('aistudio.google.com/app/apikey'), 'Settings API tab missing Google AI Studio link');
+  assert(htmlContent.includes('Create API key'), 'Settings visual guide missing Create API key mockup step');
+  assert(htmlContent.includes('id="testApiKeyBtn"'), 'Settings API tab missing connection tester button');
+
+  assert(updatedAppCode.includes('switchSettingsTab'), 'app.js missing switchSettingsTab method');
+  assert(updatedAppCode.includes('updateSettingsModalState'), 'app.js missing updateSettingsModalState method');
+  assert(updatedAppCode.includes('testApiKey'), 'app.js missing testApiKey method');
+  assert(updatedAppCode.includes('pasteApiKey'), 'app.js missing pasteApiKey method');
+  assert(updatedAppCode.includes('toggleApiKeyVisibility'), 'app.js missing toggleApiKeyVisibility method');
+  console.log('✓ Settings modal dedicated API tab, mandatory notice & visual guide verified');
+
   console.log('--- ALL CHECKS PASSED (Ponytail Approved) ---');
 })();
